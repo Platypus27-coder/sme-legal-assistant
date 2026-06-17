@@ -84,14 +84,9 @@ def tokenize(text: str) -> list[str]:
     legal_ids = re.findall(r"\b\d{1,3}/\d{4}/[\wđ-]+\b", lowered)
     phrases = [p.replace(" ", "_") for p in LEGAL_PHRASES if p in lowered]
 
-    # Try underthesea
-    try:
-        from underthesea import word_tokenize
-        words = word_tokenize(text, format="text").lower().split()
-        words = [w for w in words if len(w) > 1 or w.isdigit()]
-        return legal_ids + words + phrases
-    except (ImportError, Exception):
-        pass
+    # Bỏ qua underthesea vì thư viện này thường xuyên bị treo (hang) 
+    # hoặc chạy cực kỳ chậm khi gặp các văn bản Luật quá dài hoặc có ký tự lạ.
+    # Regex fallback bên dưới là đủ tốt cho BM25.
 
     # Regex fallback + adjacent bigrams
     words = re.findall(r"[0-9a-zà-ỹđ]+", lowered)
