@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated artifacts (large files — do not commit)
+artifacts/*
+!artifacts/**/
+!artifacts/**/.gitkeep
+*.pkl
+*.bin
+*.npy
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Competition data (may be sensitive)
+data/R2AIStage1DATA.json
+
+# Submission output
+output/submission.zip
+output/results.json
+output/results_partial.jsonl
