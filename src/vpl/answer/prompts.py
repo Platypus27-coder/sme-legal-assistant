@@ -77,6 +77,5 @@ Câu hỏi: {question.strip()}
 
 {ANSWER_FORMAT}"""
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_content},
+        {"role": "user", "content": f"{SYSTEM_PROMPT}\n\n{user_content}"},
     ]
