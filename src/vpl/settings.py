@@ -15,7 +15,7 @@ from pathlib import Path
 # Project paths
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 
@@ -164,8 +164,8 @@ class GenerationConfig:
         "unsloth/Qwen2.5-3B-Instruct-bnb-4bit",
     )
     max_seq_length: int = int(os.getenv("VPL_MAX_SEQ_LEN", "8192"))
-    max_new_tokens: int = int(os.getenv("VPL_MAX_NEW_TOKENS", "1024"))
-    max_context_chars: int = int(os.getenv("VPL_MAX_CTX_CHARS", "7000"))
+    max_new_tokens: int = int(os.getenv("VPL_MAX_NEW_TOKENS", "600"))
+    max_context_chars: int = int(os.getenv("VPL_MAX_CTX_CHARS", "4000"))
     batch_size: int = int(os.getenv("VPL_BATCH_SIZE", "4"))
     temperature: float = float(os.getenv("VPL_TEMPERATURE", "0.0"))
     top_p: float = float(os.getenv("VPL_TOP_P", "0.9"))
