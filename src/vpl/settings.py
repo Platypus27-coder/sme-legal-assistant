@@ -18,9 +18,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 
-# Auto-detect Colab environment where artifacts symlink might be placed at /content/artifacts
-if Path("/content/artifacts").exists():
-    ARTIFACTS_DIR = Path("/content/artifacts")
+# Auto-detect Google Drive to bypass symlink issues entirely
+drive_path = Path("/content/drive/MyDrive/R2AI_Artifacts")
+if drive_path.exists():
+    ARTIFACTS_DIR = drive_path
 else:
     ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 
