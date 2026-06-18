@@ -15,9 +15,14 @@ from pathlib import Path
 # Project paths
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
-ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
+
+# Auto-detect Colab environment where artifacts symlink might be placed at /content/artifacts
+if Path("/content/artifacts").exists():
+    ARTIFACTS_DIR = Path("/content/artifacts")
+else:
+    ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 
 RAW_DIR = ARTIFACTS_DIR / "raw"
 INDEX_DIR = ARTIFACTS_DIR / "index"
