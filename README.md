@@ -104,21 +104,51 @@ python run.py retune --min-articles 3 --max-articles 8 --safe-threshold 0.3
 
 ```text
 vietphaply-rag/
-├── src/vpl/                # Mã nguồn chính của pipeline RAG
-│   ├── settings.py         # File cấu hình trung tâm (Đường dẫn, siêu tham số, LLM limits)
-│   ├── corpus/             # Tải dữ liệu & Chunking logic
-│   ├── store/              # Xây dựng Index (BM25, ChromaDB)
-│   ├── search/             # Logic tìm kiếm (Hybrid, Reranker)
-│   ├── answer/             # Prompt engineering & Post-processing chống ảo giác
-│   ├── cache.py            # SQLite database cho Retrieval results (crash-safe)
-│   ├── pipeline.py         # Điều phối toàn bộ quy trình
-│   └── submit.py           # Đóng gói ZIP nộp bài & Validate
-├── run.py                  # Entry point CLI chính
-├── notebooks/              # Jupyter notebooks dùng để EDA & test
-├── docs/                   # Tài liệu thiết kế kiến trúc hệ thống
-├── data/                   # Chứa dữ liệu đầu vào (VD: R2AIStage1DATA.json)
-├── artifacts/              # Tự động sinh ra khi chạy (Cache, db, file Output)
-└── tests/                  # Unit tests
+├── src/
+│   └── vpl/                        # Package chính
+│       ├── __init__.py
+│       ├── settings.py             # Tất cả config tập trung 1 file
+│       ├── corpus/                 # Thu thập & xử lý dữ liệu
+│       │   ├── __init__.py
+│       │   ├── loader.py           # Tải HuggingFace datasets (phapdien + anle)
+│       │   ├── chunker.py          # Structural chunking theo Điều/Khoản
+│       │   └── schema.py           # LegalChunk, ChunkMeta dataclasses
+│       ├── store/                  # Xây dựng index
+│       │   ├── __init__.py
+│       │   ├── bm25.py             # BM25 indexer + legal tokenizer
+│       │   └── vectors.py          # ChromaDB manager + embedding
+│       ├── search/                 # Retrieval pipeline
+│       │   ├── __init__.py
+│       │   ├── expander.py         # HyDE query expansion
+│       │   ├── hybrid.py           # BM25 + Dense + RRF fusion
+│       │   └── reranker.py         # Cross-encoder reranker
+│       ├── answer/                 # Generation pipeline
+│       │   ├── __init__.py
+│       │   ├── generator.py        # Gemma-2-9B-it batched inference
+│       │   ├── prompts.py          # Prompt templates
+│       │   └── postprocess.py      # 3-tier post-processing
+│       ├── cache.py                # SQLite retrieval cache (crash-safe)
+│       ├── pipeline.py             # End-to-end orchestrator
+│       ├── evaluate.py             # Macro F2 + Silver Recall
+│       └── submit.py               # Validation + ZIP packaging
+│
+├── run.py                          # Entry point duy nhất (subcommands)
+├── notebooks/                      # Experiment & EDA
+│   ├── 01_data_exploration.ipynb
+│   ├── 02_retrieval_eval.ipynb
+│   └── 03_threshold_tuning.ipynb
+├── data/                           # Competition data
+│   └── R2AIStage1DATA.json
+├── artifacts/                      # Generated artifacts (gitignored)
+│   ├── raw/                        # Raw collected data
+│   ├── index/                      # BM25 + ChromaDB
+│   ├── cache/                      # SQLite retrieval cache
+│   └── output/                     # Results + submission
+├── tests/
+├── pyproject.toml
+├── requirements.txt
+├── requirements-gpu.txt
+└── README.md
 ```
 
 ## Lộ trình phát triển (Roadmap)
