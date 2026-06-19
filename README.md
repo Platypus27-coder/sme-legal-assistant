@@ -14,20 +14,25 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 
 Phiên bản hiện tại (đạt mốc điểm 0.3211) đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
 
-```mermaid
-flowchart TD
-    A[(Dữ liệu Luật Thô)] -->|Cắt nhỏ / Chunking| B[1. Ingest]
-    B --> C[(Từ điển BM25)]
-    
-    Q[2000 Câu Hỏi] --> D[2. Retrieve]
-    C -.->|Tìm kiếm Keyword| D
-    D -->|Lưu kết quả| E[(SQLite Cache)]
-    
-    E -.->|Truyền Context| F[3. Generate<br>Gemma-2-9B-it]
-    F --> G[Câu trả lời thô]
-    
-    G --> H[4. Post-Process<br>Lọc ảo giác & Vá lỗi]
-    H --> I([5. Nén submission.zip])
+```text
+[Dữ liệu Luật Thô] 
+        │
+        ▼ (Chunking)
+   [1. Ingest] ─────────────► (Từ điển BM25)
+                                     │
+[2000 Câu Hỏi] ────► [2. Retrieve] ◄─┘ (Tìm kiếm Keyword)
+                           │
+                           ▼
+                    (SQLite Cache)
+                           │
+                           ▼
+ [Gemma-2-9B-it] ──► [3. Generate]
+                           │
+                           ▼ (Câu trả lời thô)
+                    [4. Post-Process] (Lọc ảo giác & Vá lỗi)
+                           │
+                           ▼
+                  [submission.zip]
 ```
 
 1. **Ingest (Xử lý dữ liệu thô):** Tải các bộ luật, nghị định, thông tư và án lệ. Băm nhỏ văn bản (chunking) theo từng Điều/Khoản riêng biệt để LLM dễ đọc, loại bỏ các đoạn quá ngắn.
