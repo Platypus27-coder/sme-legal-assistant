@@ -1,63 +1,99 @@
-# VietPhapLy RAG
+# VietPhapLy RAG - Road2AI Legal Assistant
 
-Vietnamese Legal RAG pipeline for **R2AI2026** competition.
+**Team: impact** | **Current Score:** `Macro F2 0.3211` *(Beating Official Baseline)*
 
-- **Model**: Gemma-2-9B-it (June 2024, 9B < 14B, Apache 2.0)
-- **Embedding**: `mainguyen9/vietlegal-e5` (domain-specific, NDCG@10=0.7229)
-- **Vector DB**: ChromaDB (persistent local, zero server)
-- **Retrieval**: BM25 + Dense + RRF + Cross-encoder reranker + HyDE expansion
-- **Metric target**: Macro F2 (recall-heavy)
+Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ thống pháp luật Việt Nam, được phát triển cho cuộc thi **Road2AI 2026**. Hệ thống được thiết kế tối ưu để tra cứu văn bản pháp luật, nghị định, thông tư một cách chính xác và chống ảo giác (hallucination) nghiêm ngặt.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for full design documentation.
+## Điểm nổi bật (Key Features)
 
-## Setup
+- **Mô hình ngôn ngữ (LLM):** `Gemma-2-9B-it` - Tối ưu hóa prompt để trả lời chính xác, đóng vai chuyên gia pháp lý và chủ động từ chối trả lời nếu hệ thống không tìm thấy luật định liên quan.
+- **Hệ thống truy xuất (Retrieval):** Khởi điểm cực kỳ ổn định với **BM25** (bắt keyword, số hiệu luật chuẩn xác) kết hợp caching qua SQLite. Nền tảng được thiết kế sẵn sàng để mở rộng sang Hybrid Search (BM25 + BGE-M3 + Reranker).
+- **Tối ưu phần cứng:** Quản lý VRAM tự động (`gc.collect()`, `torch.cuda.empty_cache()`), cơ chế chia lô (batching) và retry thông minh giúp chạy mượt mà 2000 câu trên Google Colab (T4/L4) mà không bị Out-Of-Memory.
+- **Post-Processing 3 tầng:** Tự động lọc các điều luật ảo do LLM tự bịa, bổ sung citations (trích dẫn) bị thiếu một cách tự động để vượt qua khâu kiểm duyệt gắt gao (Validation) của hệ thống chấm điểm.
+
+## Hướng dẫn cài đặt (Setup)
+
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/Platypus27-coder/sme-legal-assistant.git
+   cd sme-legal-assistant
+   ```
+
+2. **Cài đặt môi trường (Khuyên dùng Conda):**
+   ```bash
+   conda create -n exact-env python=3.10 -y
+   conda activate exact-env
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+
+## Hướng dẫn sử dụng (Usage)
+
+Dự án được gom gọn vào duy nhất một entry point là `run.py`. Bạn có thể chạy toàn bộ hệ thống bằng 1 lệnh, hoặc chạy từng bước để dễ dàng theo dõi và debug.
+
+### 1. Chạy từng bước (Khuyên dùng trên Colab/Drive để tránh mất dữ liệu)
+
+- **Bước 1 - Ingest:** Thu thập và cắt nhỏ văn bản luật (chunking) theo Điều/Khoản.
+  ```bash
+  python run.py ingest
+  ```
+- **Bước 2 - Index:** Xây dựng cơ sở dữ liệu tìm kiếm (BM25 và Vector).
+  ```bash
+  python run.py index --device cuda
+  ```
+- **Bước 3 - Retrieve:** Tìm kiếm các đoạn luật liên quan cho từng câu hỏi và lưu vào Cache SQLite. Quá trình này giúp tách biệt việc tìm kiếm và sinh văn bản.
+  ```bash
+  python run.py retrieve --device cuda
+  ```
+- **Bước 4 - Generate:** Chạy mô hình LLM (Gemma 2) để đọc luật từ Cache và viết câu trả lời.
+  ```bash
+  python run.py generate --device cuda
+  ```
+- **Bước 5 - Submit:** Kiểm tra lỗi (Validate), tự động vá lỗi trích dẫn và nén thành file `submission.zip` sẵn sàng nộp bài.
+  ```bash
+  python run.py submit
+  ```
+
+### 2. Chạy toàn bộ luồng tự động (End-to-End Pipeline)
 
 ```bash
-pip install -r requirements.txt
-pip install -e .
-```
-
-## Usage
-
-```bash
-# Full pipeline
+# Tự động chạy tuần tự từ Ingest -> Submit
 python run.py pipeline --device cuda
 
-# Step by step
-python run.py ingest
-python run.py index --device cuda
-python run.py retrieve --device cuda
-python run.py generate --device cuda
-python run.py submit
-
-# Skip completed phases
+# Bỏ qua Ingest/Index nếu đã tạo sẵn Database trên Google Drive
 python run.py pipeline --skip-ingest --skip-index --device cuda
-
-# Local evaluation
-python run.py eval --pred artifacts/output/results.json --ref data/dev_set.json
-
-# Retune thresholds without rerunning LLM
-python run.py retune --min-articles 3 --max-articles 8 --safe-threshold 0.25
 ```
 
-## Project Structure
+### 3. Tiện ích tinh chỉnh nhanh (Retune)
+Nếu muốn đổi ngưỡng giới hạn số lượng điều luật tối đa/tối thiểu được hiển thị mà **không cần mất hàng chục tiếng để GPU chạy lại LLM**:
+```bash
+python run.py retune --min-articles 3 --max-articles 8 --safe-threshold 0.3
+```
+
+## Cấu trúc thư mục (Project Structure)
 
 ```text
 vietphaply-rag/
-├── src/vpl/                # Mã nguồn chính của pipeline
-│   ├── settings.py         # File cấu hình duy nhất tập trung mọi hằng số
-│   ├── corpus/             # Tải dữ liệu từ HuggingFace & Chunking theo Điều/Khoản
-│   ├── store/              # Xây dựng index (BM25 + ChromaDB vector store)
-│   ├── search/             # Hybrid retrieval (BM25 + Dense), RRF fusion, Reranker, HyDE
-│   ├── answer/             # Sinh câu trả lời với Gemma-2-9B & Post-processing 3 tầng
-│   ├── cache.py            # SQLite database cho việc cache retrieval results (crash-safe)
-│   ├── pipeline.py         # Điều phối toàn bộ quy trình end-to-end
-│   ├── evaluate.py         # Đánh giá tự động Macro F2 & Silver Recall
-│   └── submit.py           # Đóng gói và validate định dạng file zip nộp bài nộp
-├── run.py                  # Entry point duy nhất chứa các subcommands (ingest, index, retrieve...)
-├── notebooks/              # Jupyter notebooks dùng cho EDA, thử nghiệm và debug
-├── docs/                   # Tài liệu thiết kế kiến trúc
-├── data/                   # Thư mục chứa dữ liệu đầu vào (VD: R2AIStage1DATA.json)
-├── artifacts/              # Thư mục chứa kết quả sinh ra (raw data, index, cache, output)
-└── tests/                  # Unit tests cho các module
+├── src/vpl/                # Mã nguồn chính của pipeline RAG
+│   ├── settings.py         # File cấu hình trung tâm (Đường dẫn, siêu tham số, LLM limits)
+│   ├── corpus/             # Tải dữ liệu & Chunking logic
+│   ├── store/              # Xây dựng Index (BM25, ChromaDB)
+│   ├── search/             # Logic tìm kiếm (Hybrid, Reranker)
+│   ├── answer/             # Prompt engineering & Post-processing chống ảo giác
+│   ├── cache.py            # SQLite database cho Retrieval results (crash-safe)
+│   ├── pipeline.py         # Điều phối toàn bộ quy trình
+│   └── submit.py           # Đóng gói ZIP nộp bài & Validate
+├── run.py                  # Entry point CLI chính
+├── notebooks/              # Jupyter notebooks dùng để EDA & test
+├── docs/                   # Tài liệu thiết kế kiến trúc hệ thống
+├── data/                   # Chứa dữ liệu đầu vào (VD: R2AIStage1DATA.json)
+├── artifacts/              # Tự động sinh ra khi chạy (Cache, db, file Output)
+└── tests/                  # Unit tests
 ```
+
+## Lộ trình phát triển (Roadmap)
+- [x] Xây dựng kiến trúc end-to-end trên Google Colab.
+- [x] Thiết lập BM25 Baseline an toàn, không OOM.
+- [x] Hoàn thiện Post-processing tự động vá lỗi trích dẫn (Validation Passed).
+- [x] Cán mốc điểm số `0.3211` vượt Baseline chính thức.
+- [ ] Tích hợp **Hybrid Search (BM25 + BGE-M3 + Reranker)** để bắt ngữ nghĩa ẩn và bứt phá thứ hạng Top 10.
