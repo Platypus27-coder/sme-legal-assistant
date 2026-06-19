@@ -1,6 +1,6 @@
 # VietPhapLy RAG - Road2AI Legal Assistant
 
-**Team: impact** | **Current Score:** `Macro F2 0.3211` *(Beating Official Baseline)*
+**Team: impact** | **Current Score:** `Macro F2 0.3211`
 
 Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ thống pháp luật Việt Nam, được phát triển cho cuộc thi **Road2AI 2026**. Hệ thống được thiết kế tối ưu để tra cứu văn bản pháp luật, nghị định, thông tư một cách chính xác và chống ảo giác (hallucination) nghiêm ngặt.
 
