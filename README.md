@@ -96,4 +96,3 @@ vietphaply-rag/
 - [x] Thiết lập BM25 Baseline an toàn, không OOM.
 - [x] Hoàn thiện Post-processing tự động vá lỗi trích dẫn (Validation Passed).
 - [x] Cán mốc điểm số `0.3211` vượt Baseline chính thức.
-- [ ] Tích hợp **Hybrid Search (BM25 + BGE-M3 + Reranker)** để bắt ngữ nghĩa ẩn và bứt phá thứ hạng Top 10.
