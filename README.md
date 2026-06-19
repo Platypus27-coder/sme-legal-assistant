@@ -10,6 +10,31 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 - **Hệ thống truy xuất (Retrieval):** Khởi điểm cực kỳ ổn định với **BM25** (bắt keyword, số hiệu luật chuẩn xác) kết hợp caching qua SQLite. Nền tảng được thiết kế sẵn sàng để mở rộng sang Hybrid Search (BM25 + BGE-M3 + Reranker).
 - **Tối ưu phần cứng:** Quản lý VRAM tự động (`gc.collect()`, `torch.cuda.empty_cache()`), cơ chế chia lô (batching) và retry thông minh giúp chạy mượt mà 2000 câu trên Google Colab (T4/L4) mà không bị Out-Of-Memory.
 - **Post-Processing 3 tầng:** Tự động lọc các điều luật ảo do LLM tự bịa, bổ sung citations (trích dẫn) bị thiếu một cách tự động để vượt qua khâu kiểm duyệt gắt gao (Validation) của hệ thống chấm điểm.
+## Quy trình hoạt động (Baseline Pipeline)
+
+Phiên bản hiện tại (đạt mốc điểm 0.3211) đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
+
+```mermaid
+flowchart TD
+    A[(Dữ liệu Luật Thô)] -->|Cắt nhỏ / Chunking| B[1. Ingest]
+    B --> C[(Từ điển BM25)]
+    
+    Q[2000 Câu Hỏi] --> D[2. Retrieve]
+    C -.->|Tìm kiếm Keyword| D
+    D -->|Lưu kết quả| E[(SQLite Cache)]
+    
+    E -.->|Truyền Context| F[3. Generate<br>Gemma-2-9B-it]
+    F --> G[Câu trả lời thô]
+    
+    G --> H[4. Post-Process<br>Lọc ảo giác & Vá lỗi]
+    H --> I([5. Nén submission.zip])
+```
+
+1. **Ingest (Xử lý dữ liệu thô):** Tải các bộ luật, nghị định, thông tư và án lệ. Băm nhỏ văn bản (chunking) theo từng Điều/Khoản riêng biệt để LLM dễ đọc, loại bỏ các đoạn quá ngắn.
+2. **Index (Lập chỉ mục tìm kiếm):** Quét toàn bộ các đoạn luật vừa cắt và đưa vào từ điển tìm kiếm từ khóa (BM25 Sparse Index). Ở phiên bản này, hệ thống tập trung hoàn toàn vào việc bắt keyword và số hiệu luật chính xác tuyệt đối.
+3. **Retrieve (Truy xuất tài liệu):** Đọc 2000 câu hỏi, dùng BM25 để tìm ra các Điều luật liên quan nhất cho từng câu. Lưu toàn bộ kết quả tìm được vào một Database trung gian (SQLite Cache) để tách biệt hoàn toàn khâu tìm kiếm và khâu sinh text.
+4. **Generate (Sinh câu trả lời - LLM):** Bật mô hình `Gemma-2-9B-it` lên GPU. Mô hình đọc câu hỏi và các Điều luật tương ứng lấy từ SQLite Cache. Nó đóng vai trò một chuyên gia pháp lý để phân tích, tổng hợp và viết ra câu trả lời cuối cùng. Quá trình này được chia lô nhỏ (batching) và dọn rác VRAM liên tục để chống tràn bộ nhớ (Out-of-Memory).
+5. **Post-Process & Submit (Hậu xử lý):** Quét lại câu trả lời của LLM. Tự động xóa bỏ các điều luật "ảo" (hallucinations) do AI tự bịa ra. Bổ sung các trích dẫn pháp lý (citations) bị thiếu vào cuối câu trả lời để đảm bảo vượt qua vòng kiểm duyệt (Validation) gắt gao của hệ thống chấm điểm, sau đó nén thành `submission.zip`.
 
 ## Hướng dẫn cài đặt (Setup)
 
