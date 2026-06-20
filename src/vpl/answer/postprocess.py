@@ -42,7 +42,7 @@ class PostConfig:
     min_articles: int = SEARCH.min_articles
     max_articles: int = SEARCH.max_articles
     max_context_chunks: int = SEARCH.max_context_chunks
-    max_fallback_citations: int = 5
+    max_fallback_citations: int = 15
     standard_warning: str = SUBMISSION.standard_warning
 
 

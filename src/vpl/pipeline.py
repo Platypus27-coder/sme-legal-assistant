@@ -54,6 +54,18 @@ def run_retrieve(
         cache.append(int(q["id"]), str(q["question"]), results)
         if i % 100 == 0:
             print(f"  retrieved {i}/{len(pending)}...", flush=True)
+            
+    # Clean up VRAM before returning to prevent OOM in generate phase
+    del retriever
+    del reranker
+    del collection
+    del embed_model
+    import gc
+    import torch
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        
     print(f"✅ Retrieval complete → {cache.path}")
 
 

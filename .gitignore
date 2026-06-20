@@ -34,8 +34,6 @@ artifacts/*
 .DS_Store
 Thumbs.db
 
-# Competition data (may be sensitive)
-data/R2AIStage1DATA.json
 
 # Submission output
 output/submission.zip
