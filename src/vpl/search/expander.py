@@ -74,8 +74,7 @@ def generate_hypothetical_doc(query: str, generator: object | None) -> str:
         # Dùng generator đã có để sinh hypothetical doc
         from vpl.answer.generator import build_messages
         messages = [
-            {"role": "system", "content": _HYDE_SYSTEM},
-            {"role": "user", "content": f"Câu hỏi: {query}"},
+            {"role": "user", "content": f"[HƯỚNG DẪN DÀNH CHO BẠN]\n{_HYDE_SYSTEM}\n[/HƯỚNG DẪN DÀNH CHO BẠN]\n\nCâu hỏi: {query}"},
         ]
         # Generate 1 câu trả lời ngắn — batch_size=1, max_new_tokens nhỏ
         results = generator.generate_raw(messages, max_new_tokens=SEARCH.hyde_max_tokens)  # type: ignore[attr-defined]

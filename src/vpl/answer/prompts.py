@@ -68,7 +68,11 @@ def format_context(chunks: Sequence[Any], max_chars: int | None = None) -> str:
 
 def build_messages(question: str, chunks: Sequence[Any], max_context_chars: int | None = None) -> list[dict]:
     context = format_context(chunks, max_chars=max_context_chars)
-    user_content = f"""[NGỮ CẢNH]
+    user_content = f"""[HƯỚNG DẪN DÀNH CHO BẠN]
+{SYSTEM_PROMPT}
+[/HƯỚNG DẪN DÀNH CHO BẠN]
+
+[NGỮ CẢNH]
 {context}
 [/NGỮ CẢNH]
 
@@ -77,6 +81,5 @@ Câu hỏi: {question.strip()}
 
 {ANSWER_FORMAT}"""
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_content},
     ]

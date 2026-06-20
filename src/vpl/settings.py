@@ -136,10 +136,11 @@ class SearchConfig:
     reranker_batch_size: int = 16
 
     # Dynamic thresholds (F2-optimized: recall >> precision)
-    high_conf_threshold: float = 0.5    # → relevant_articles
-    safe_threshold: float = 0.3         # → LLM context
-    min_articles: int = 3               # Fallback nếu không đủ high-conf
-    max_articles: int = 8               # Cap relevant_articles
+    # v2 tune: tăng threshold để cắt articles rác, giảm spam
+    high_conf_threshold: float = 0.60   # → relevant_articles (tăng từ 0.50)
+    safe_threshold: float = 0.42        # → LLM context (tăng từ 0.30)
+    min_articles: int = 1               # Fallback: giữ top-1 thay vì ép 3 cái rác
+    max_articles: int = 5               # Cap relevant_articles (giảm từ 8)
     max_context_chunks: int = 25        # Cap chunks gửi cho LLM
 
     # HyDE expansion
