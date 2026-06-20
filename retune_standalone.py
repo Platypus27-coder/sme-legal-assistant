@@ -10,7 +10,7 @@ from pathlib import Path
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 HIGH_CONF  = 0.62   # score >= này → vào relevant_articles
-SAFE       = 0.55   # score >= này → vào LLM context (fallback)
+SAFE       = 0.52   # score >= này → vào LLM context (fallback)
 MIN_ART    = 0      # cho phép nộp mảng rỗng nếu không tìm thấy luật
 MAX_ART    = 3      # tối đa 3 articles mỗi câu (ép Precision cực độ)
 

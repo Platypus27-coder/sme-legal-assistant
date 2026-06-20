@@ -144,7 +144,7 @@ class SearchConfig:
     # Dynamic thresholds (F2-optimized: recall >> precision)
     # v2 tune: tăng threshold để cắt articles rác, giảm spam
     high_conf_threshold: float = 0.62   # → relevant_articles (tăng từ 0.60)
-    safe_threshold: float = 0.55        # → LLM context (tăng từ 0.42)
+    safe_threshold: float = 0.52        # → LLM context (tăng từ 0.42)
     min_articles: int = 0               # Cho phép nộp mảng rỗng [] nếu không tìm thấy luật
     max_articles: int = 3               # Cap relevant_articles (giảm từ 5, ép Precision)
     max_context_chunks: int = 25        # Cap chunks gửi cho LLM
