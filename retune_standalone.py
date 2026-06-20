@@ -9,10 +9,10 @@ import re
 from pathlib import Path
 
 # ─── Config ───────────────────────────────────────────────────────────────────
-HIGH_CONF  = 0.60   # score >= này → vào relevant_articles
-SAFE       = 0.42   # score >= này → vào LLM context (fallback)
-MIN_ART    = 1      # giữ ít nhất top-1 nếu không có high-conf
-MAX_ART    = 5      # tối đa 5 articles mỗi câu
+HIGH_CONF  = 0.62   # score >= này → vào relevant_articles
+SAFE       = 0.55   # score >= này → vào LLM context (fallback)
+MIN_ART    = 0      # cho phép nộp mảng rỗng nếu không tìm thấy luật
+MAX_ART    = 3      # tối đa 3 articles mỗi câu (ép Precision cực độ)
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 BASE        = Path(__file__).parent
@@ -63,12 +63,12 @@ def select_articles(chunks):
     high_conf = [(s, m) for s, m in unique if s >= HIGH_CONF]
     safe_tier = [(s, m) for s, m in unique if s >= SAFE]
 
-    if len(high_conf) >= MIN_ART:
+    if len(high_conf) > 0:
         selected = high_conf
-    elif len(safe_tier) >= MIN_ART:
+    elif len(safe_tier) > 0:
         selected = safe_tier
     else:
-        selected = unique[:MIN_ART]  # fallback: top-1 bất kể điểm
+        selected = unique[:MIN_ART]  # fallback cuối cùng
 
     return selected[:MAX_ART]
 
