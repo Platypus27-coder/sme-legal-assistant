@@ -22,17 +22,21 @@ from vpl.settings import SEARCH
 
 _DOMAIN_EXPANSIONS: dict[tuple[str, ...], str] = {
     ("doanh nghiệp nhỏ và vừa", "dnnvv", "khởi nghiệp"): "Luật hỗ trợ doanh nghiệp nhỏ và vừa nghị định hướng dẫn",
-    ("người lao động", "hợp đồng lao động", "tiền lương"): "Bộ luật Lao động xử phạt vi phạm lao động",
+    ("người lao động", "hợp đồng lao động", "tiền lương", "công đoàn"): "Bộ luật Lao động xử phạt vi phạm lao động công đoàn",
     ("bảo hiểm xã hội", "bhxh", "bảo hiểm thất nghiệp"): "Luật Bảo hiểm xã hội xử phạt chậm đóng",
-    ("thuế", "khai thuế", "nộp thuế", "chậm nộp"): "Luật Quản lý thuế xử phạt vi phạm hành chính",
+    ("thuế", "khai thuế", "nộp thuế", "chậm nộp", "mã số thuế"): "Luật Quản lý thuế xử phạt vi phạm hành chính thuế",
     ("hóa đơn", "chứng từ"): "hóa đơn chứng từ xử phạt vi phạm hành chính",
     ("kế toán", "báo cáo tài chính"): "Luật Kế toán chuẩn mực báo cáo tài chính",
-    ("nhãn hiệu", "sở hữu trí tuệ", "bản quyền"): "Luật Sở hữu trí tuệ",
-    ("hợp đồng", "thương mại", "mua bán"): "Luật Thương mại Bộ luật Dân sự hợp đồng",
+    ("nhãn hiệu", "sở hữu trí tuệ", "bản quyền", "sáng chế"): "Luật Sở hữu trí tuệ vi phạm quyền sở hữu",
+    ("hợp đồng", "thương mại", "mua bán", "đặt cọc"): "Luật Thương mại Bộ luật Dân sự hợp đồng đặt cọc",
     ("xử phạt", "vi phạm", "khắc phục hậu quả"): "nghị định xử phạt vi phạm hành chính",
     ("đất đai", "mặt bằng", "thuê đất"): "Luật Đất đai hỗ trợ mặt bằng sản xuất",
     ("đấu thầu", "nhà thầu"): "Luật Đấu thầu ưu đãi doanh nghiệp nhỏ và vừa",
     ("tín dụng", "bảo lãnh", "vay vốn"): "quỹ bảo lãnh tín dụng hỗ trợ doanh nghiệp nhỏ và vừa",
+    ("phá sản", "giải thể"): "Luật Phá sản giải thể doanh nghiệp",
+    ("đầu tư", "giấy chứng nhận đầu tư", "chấp thuận chủ trương"): "Luật Đầu tư quy định về thủ tục đầu tư",
+    ("chữ ký số", "giao dịch điện tử"): "Luật Giao dịch điện tử chữ ký số chứng thực",
+    ("người tiêu dùng", "khách hàng", "bảo hành"): "Luật Bảo vệ quyền lợi người tiêu dùng",
 }
 
 

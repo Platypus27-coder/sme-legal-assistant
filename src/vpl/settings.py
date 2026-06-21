@@ -109,12 +109,12 @@ class IndexConfig:
 
     # Embedding model — ưu tiên domain-specific Vietnamese legal
     embedding_model_candidates: tuple[str, ...] = (
-        "mainguyen9/vietlegal-e5",                          # Fine-tuned legal VN, NDCG@10=0.7229
+        "BAAI/bge-m3",                                      # Multilingual, 1024-dim, strong semantic
         "cyhapun/vn-legal-embedding-v1",                    # BGE-M3 fine-tuned legal VN
-        "BAAI/bge-m3",                                      # Generic multilingual fallback
+        "mainguyen9/vietlegal-e5",                          # Fine-tuned legal VN, NDCG@10=0.7229
     )
-    embedding_batch_size: int = 32
-    embedding_max_length: int = 512
+    embedding_batch_size: int = 16              # BGE-M3 nặng hơn, giảm batch tránh OOM
+    embedding_max_length: int = 1024            # BGE-M3 hỗ trợ 8192, tăng để capture legal chunks dài
 
     # ChromaDB collection name
     chroma_collection: str = "vpl_legal"
@@ -130,6 +130,8 @@ class SearchConfig:
     dense_top_k: int = 50
     rrf_k: int = 60             # RRF constant: RRF(d) = Σ 1/(k + rank_i(d))
     fusion_top_k: int = 30      # Candidates đưa vào reranker sau RRF
+    fusion_reranker_weight: float = 0.8         # Tỷ trọng điểm Reranker (so với điểm nền BM25+BGE)
+    fusion_base_weight: float = 0.2             # Tỷ trọng điểm nền RRF (so với điểm Reranker)
 
     # Reranker
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
