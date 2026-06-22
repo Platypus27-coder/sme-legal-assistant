@@ -12,7 +12,7 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 - **Post-Processing 3 tầng:** Tự động lọc các điều luật ảo do LLM tự bịa, bổ sung citations (trích dẫn) bị thiếu một cách tự động để vượt qua khâu kiểm duyệt gắt gao (Validation) của hệ thống chấm điểm.
 ## Quy trình hoạt động (Baseline Pipeline)
 
-Phiên bản hiện tại (đạt mốc điểm 0.3211) đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
+Phiên bản hiện tại (đạt mốc điểm 0.39) đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
 
 ```text
 [Dữ liệu Luật Thô] 
