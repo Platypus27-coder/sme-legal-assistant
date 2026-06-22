@@ -39,7 +39,7 @@ OUT_ZIP     = OUT_DIR / "submission_reranked.zip"
 CKPT_JSON   = OUT_DIR / "results_reranked_checkpoint.json"  # file resume duy nhất
 
 # Google Drive (tự động dùng khi chạy Colab)
-DRIVE_DIR   = Path("/content/drive/MyDrive/R2AI_Artifacts_V2")
+DRIVE_DIR   = Path("/content/drive/MyDrive/R2AI_Artifacts")
 DRIVE_CKPT  = DRIVE_DIR / "results_reranked_checkpoint.json"
 DRIVE_ZIP   = DRIVE_DIR / "submission_reranked.zip"
 
@@ -55,7 +55,7 @@ def _sigmoid(x: float) -> float:
 
 def save_to_drive(src: Path, dst: Path) -> bool:
     """Copy file lên Drive. Trả về True nếu thành công."""
-    if not DRIVE_DIR.exists():
+    if not DRIVE_DIR.parent.exists():
         return False
     try:
         DRIVE_DIR.mkdir(parents=True, exist_ok=True)

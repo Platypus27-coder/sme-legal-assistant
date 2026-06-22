@@ -109,12 +109,12 @@ class IndexConfig:
 
     # Embedding model — ưu tiên domain-specific Vietnamese legal
     embedding_model_candidates: tuple[str, ...] = (
-        "BAAI/bge-m3",                                      # Multilingual, 1024-dim, strong semantic
-        "cyhapun/vn-legal-embedding-v1",                    # BGE-M3 fine-tuned legal VN
         "mainguyen9/vietlegal-e5",                          # Fine-tuned legal VN, NDCG@10=0.7229
+        "cyhapun/vn-legal-embedding-v1",                    # BGE-M3 fine-tuned legal VN
+        "BAAI/bge-m3",                                      # Multilingual, 1024-dim, strong semantic
     )
-    embedding_batch_size: int = 16              # BGE-M3 nặng hơn, giảm batch tránh OOM
-    embedding_max_length: int = 1024            # BGE-M3 hỗ trợ 8192, tăng để capture legal chunks dài
+    embedding_batch_size: int = 32
+    embedding_max_length: int = 512
 
     # ChromaDB collection name
     chroma_collection: str = "vpl_legal"
