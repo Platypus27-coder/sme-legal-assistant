@@ -388,7 +388,7 @@ def build_variants(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--answers", type=Path, default=ROOT / "artifacts" / "output" / "results.json")
+    parser.add_argument("--answers", type=Path, default=ROOT / "artifacts" / "output" / "results_retune.json")
     parser.add_argument("--cache", type=Path, default=ROOT / "artifacts" / "cache" / "retrieval.db")
     parser.add_argument("--questions", type=Path, default=ROOT / "data" / "R2AIStage1DATA.json")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "artifacts" / "output" / "dev_huy")
