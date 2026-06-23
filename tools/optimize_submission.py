@@ -31,13 +31,13 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 LEGAL_BASIS_RE = re.compile(
-    r"\n\nC(?:ơ|Æ¡)\s+s(?:ở|á»Ÿ)\s+ph(?:á|Ă¡)p\s+l(?:ý|Ă½)\s+tham\s+chi(?:ếu|áº¿u):.*?"
-    r"(?=\n\nC(?:ả|áº£)nh\s+b(?:á|Ă¡)o\s+gi(?:ới|á»›i)\s+h(?:ạn|áº¡n):|\Z)",
+    r"\n+C(?:ơ|Æ¡)\s+s(?:ở|á»Ÿ)\s+ph(?:á|Ă¡)p\s+l(?:ý|Ă½)\s+tham\s+chi(?:ếu|áº¿u):.*?"
+    r"(?=\n+C(?:ả|áº£)nh\s+b(?:á|Ă¡)o\s+gi(?:ới|á»›i)\s+h(?:ạn|áº¡n):|\Z)",
     re.IGNORECASE | re.DOTALL,
 )
 
 WARNING_RE = re.compile(
-    r"\n\nC(?:ả|áº£)nh\s+b(?:á|Ă¡)o\s+gi(?:ới|á»›i)\s+h(?:ạn|áº¡n):.*?\Z",
+    r"\n+C(?:ả|áº£)nh\s+b(?:á|Ă¡)o\s+gi(?:ới|á»›i)\s+h(?:ạn|áº¡n):.*?\Z",
     re.IGNORECASE | re.DOTALL,
 )
 
