@@ -55,9 +55,11 @@ class Variant:
 
 
 VARIANTS = (
-    Variant("balanced_v1", high=0.56, safe=0.46, min_articles=1, max_articles=4),
-    Variant("precision_v1", high=0.62, safe=0.52, min_articles=0, max_articles=3),
-    Variant("recall_v1", high=0.50, safe=0.40, min_articles=1, max_articles=5),
+    Variant("pure_base_v2", high=0.62, safe=0.52, min_articles=0, max_articles=3),
+    Variant("pure_high_v2", high=0.65, safe=0.55, min_articles=0, max_articles=3),
+    Variant("pure_low_v2", high=0.58, safe=0.48, min_articles=0, max_articles=3),
+    Variant("pure_force_v2", high=0.62, safe=0.52, min_articles=1, max_articles=3),
+    Variant("pure_max2_v2", high=0.62, safe=0.52, min_articles=0, max_articles=2),
 )
 
 
@@ -215,11 +217,10 @@ def _rerank_question(
     else:
         base_scores = [_score(c) for c in candidates]
 
-    main_answer = _extract_main_answer(answer)
     scored: list[tuple[float, dict[str, Any]]] = []
     for base, chunk in zip(base_scores, candidates):
         meta = _metadata(chunk)
-        score = min(1.0, float(base) + _lexical_boost(question, main_answer, meta))
+        score = float(base)
         scored.append((score, meta))
     scored.sort(key=lambda item: item[0], reverse=True)
     return scored
