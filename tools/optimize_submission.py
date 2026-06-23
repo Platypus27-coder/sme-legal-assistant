@@ -206,7 +206,7 @@ def _rerank_question(
 
     if reranker is not None:
         try:
-            pairs = [(question, str(c.get("text", ""))[:1200]) for c in candidates]
+            pairs = [(question, str(c.get("text", ""))) for c in candidates]
             logits = reranker.predict(pairs, batch_size=batch_size, show_progress_bar=False)
             base_scores = [_sigmoid(float(logit)) for logit in logits]
         except Exception as exc:
