@@ -321,6 +321,17 @@ def _write_variant(
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(results_path, arcname="results.json")
 
+    # Copy to Google Drive if available
+    drive_dir = Path("/content/drive/MyDrive/R2AI_Artifacts")
+    if drive_dir.exists():
+        try:
+            drive_zip = drive_dir / f"submission_{variant.name}.zip"
+            import shutil
+            shutil.copy2(zip_path, drive_zip)
+            print(f"  ☁️ Copped to Drive: {drive_zip}")
+        except Exception as e:
+            print(f"  ⚠️ Drive copy failed: {e}")
+
     counts = [len(r["relevant_articles"]) for r in results]
     doc_counter = Counter(d for r in results for d in r["relevant_docs"])
     article_counter = Counter(a for r in results for a in r["relevant_articles"])
