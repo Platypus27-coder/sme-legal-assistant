@@ -403,7 +403,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     answers = _load_rows(args.answers)
-    questions = _load_json(args.questions)
+    if args.questions.exists():
+        questions = _load_json(args.questions)
+    else:
+        print(f"⚠️ Questions file not found at {args.questions}, generating from answers.")
+        questions = [{"id": r["id"], "question": r["question"]} for r in answers]
     cache = _load_cache(args.cache)
     if args.limit is None and len(answers) != len(questions):
         raise ValueError(f"answers/questions length mismatch: {len(answers)} != {len(questions)}")
