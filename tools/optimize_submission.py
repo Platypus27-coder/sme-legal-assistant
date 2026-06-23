@@ -175,7 +175,7 @@ def _candidate_chunks(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
         meta = _metadata(chunk)
         art = str(meta.get("formatted_article") or "")
         doc_id = str(meta.get("doc_id") or "")
-        if not art or not doc_id or meta.get("submission_eligible", True) is False:
+        if not art or not doc_id or not meta.get("submission_eligible", True):
             continue
         if _score(chunk) > _score(best.get(art, {})):
             best[art] = chunk
