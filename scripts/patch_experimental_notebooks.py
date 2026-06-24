@@ -1,0 +1,125 @@
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+def patch_retune_notebook():
+    nb_path = ROOT / "colab_test_retune_only.ipynb"
+    if not nb_path.exists():
+        print(f"ERROR: File not found: {nb_path}")
+        return
+
+    with open(nb_path, "r", encoding="utf-8") as f:
+        nb = json.load(f)
+
+    patched_c2 = False
+    patched_c4 = False
+
+    for cell in nb["cells"]:
+        if cell.get("cell_type") == "code":
+            source = cell.get("source", [])
+            source_str = "".join(source)
+
+            # Patch Cell 2: Branch & Restore Files
+            if "REPO_URL" in source_str and "BRANCH" in source_str:
+                new_source = []
+                for line in source:
+                    if "BRANCH" in line and "=" in line:
+                        new_source.append("BRANCH    = 'experiment-rag-upgrade'\n")
+                    elif "files_to_restore = [" in line:
+                        new_source.append("files_to_restore = [\n")
+                        new_source.append("    (['retrieval_test.db', 'retrieval_hybrid.db', 'retrieval.db'], 'artifacts/cache/retrieval_test.db'),\n")
+                        new_source.append("    (['results_partial_test.jsonl', 'results_partial.jsonl'], 'artifacts/output/results_partial_test.jsonl'),\n")
+                        new_source.append("    ('R2AIStage1DATA.json', 'data/R2AIStage1DATA.json')\n")
+                        new_source.append("]\n# patched_restore_line")
+                    elif "patched_restore_line" in line or any(x in line for x in ["retrieval_hybrid.db", "results_partial.jsonl"]):
+                        # Skip old restore lines
+                        continue
+                    else:
+                        new_source.append(line)
+                cell["source"] = new_source
+                patched_c2 = True
+
+            # Patch Cell 4: Change default output name if user runs retune
+            if "rerank_retune.py" in source_str and "HIGH_CONF" in source_str:
+                new_source = []
+                for line in source:
+                    if "submission_reranked.zip" in line:
+                        new_source.append(line.replace("submission_reranked.zip", "submission_reranked_test.zip"))
+                    else:
+                        new_source.append(line)
+                cell["source"] = new_source
+                patched_c4 = True
+
+    with open(nb_path, "w", encoding="utf-8") as f:
+        json.dump(nb, f, indent=1, ensure_ascii=False)
+    print(f"SUCCESS: Patched {nb_path.name} (Cell 2: {patched_c2}, Cell 4: {patched_c4})")
+
+
+def patch_pipeline_notebook():
+    nb_path = ROOT / "colab_hybrid_rerank.ipynb"
+    if not nb_path.exists():
+        print(f"ERROR: File not found: {nb_path}")
+        return
+
+    with open(nb_path, "r", encoding="utf-8") as f:
+        nb = json.load(f)
+
+    patched_c3 = False
+    patched_c6 = False
+    patched_c7 = False
+
+    for cell in nb["cells"]:
+        if cell.get("cell_type") == "code":
+            source = cell.get("source", [])
+            source_str = "".join(source)
+
+            # Patch Cell 3: Branch & Restore Files
+            if "REPO_URL" in source_str and "BRANCH" in source_str:
+                new_source = []
+                for line in source:
+                    if "BRANCH" in line and "=" in line:
+                        new_source.append("BRANCH    = 'experiment-rag-upgrade'\n")
+                    elif "results_partial.jsonl" in line and "shutil.copy2" in line:
+                        new_source.append("if os.path.exists(f'{DRIVE_DIR}/results_partial_test.jsonl'):\n")
+                        new_source.append("    shutil.copy2(f'{DRIVE_DIR}/results_partial_test.jsonl', f'{WORK_DIR}/artifacts/output/results_partial_test.jsonl')\n")
+                        new_source.append("    print('[OK] Restored results_partial_test.jsonl')\n")
+                        new_source.append("elif os.path.exists(f'{DRIVE_DIR}/results_partial.jsonl'):\n")
+                        new_source.append("    shutil.copy2(f'{DRIVE_DIR}/results_partial.jsonl', f'{WORK_DIR}/artifacts/output/results_partial_test.jsonl')\n")
+                        new_source.append("    print('[OK] Restored results_partial.jsonl as results_partial_test.jsonl')\n")
+                    else:
+                        new_source.append(line)
+                cell["source"] = new_source
+                patched_c3 = True
+
+            # Patch Cell 6: Database paths for retrieval
+            if "DB_LOCAL" in source_str and "DRIVE_DB" in source_str and "run.py" in source_str:
+                new_source = []
+                for line in source:
+                    if "DB_LOCAL" in line and "retrieval.db" in line:
+                        new_source.append("DB_LOCAL  = 'artifacts/cache/retrieval_test.db'\n")
+                    elif "DRIVE_DB" in line and "retrieval_hybrid.db" in line:
+                        new_source.append("DRIVE_DB  = f'{DRIVE_DIR}/retrieval_hybrid_test.db'\n")
+                    elif "SELECT COUNT(*)" in line:
+                        new_source.append(line.replace("retrieval_cache", "retrieval_cache"))
+                    else:
+                        new_source.append(line)
+                cell["source"] = new_source
+                patched_c6 = True
+
+            # Patch Cell 7: Checkpoint path
+            if "results_reranked_checkpoint.json" in source_str:
+                new_source = []
+                for line in source:
+                    new_source.append(line.replace("results_reranked_checkpoint.json", "results_reranked_checkpoint_test.json").replace("submission_reranked.zip", "submission_reranked_test.zip"))
+                cell["source"] = new_source
+                patched_c7 = True
+
+    with open(nb_path, "w", encoding="utf-8") as f:
+        json.dump(nb, f, indent=1, ensure_ascii=False)
+    print(f"SUCCESS: Patched {nb_path.name} (Cell 3: {patched_c3}, Cell 6: {patched_c6}, Cell 7: {patched_c7})")
+
+
+if __name__ == "__main__":
+    patch_retune_notebook()
+    patch_pipeline_notebook()
