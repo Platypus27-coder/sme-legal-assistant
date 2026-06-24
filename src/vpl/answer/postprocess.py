@@ -111,12 +111,8 @@ class PostProcessor:
                 flags=re.IGNORECASE,
             )
 
-        # Tầng 3: citation fallback
-        top_score = max(
-            (c.score if hasattr(c, "score") else c.get("score", 0) for c in chunks),
-            default=0.0,
-        )
-        if top_score >= 0.0:
+        # Tầng 3: citation fallback (Bắt buộc phải trích dẫn tất cả các chunk được chọn để thỏa mãn điều kiện Kaggle)
+        if chunks:
             refs = []
             for c in chunks:
                 meta = _meta(c)
