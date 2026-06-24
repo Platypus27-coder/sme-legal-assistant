@@ -55,11 +55,11 @@ class Variant:
 
 
 VARIANTS = (
-    Variant("pure_max2_t70_v4", high=0.70, safe=0.60, min_articles=0, max_articles=2),
-    Variant("pure_max2_t72_v4", high=0.72, safe=0.62, min_articles=0, max_articles=2),
-    Variant("pure_max2_t75_v4", high=0.75, safe=0.65, min_articles=0, max_articles=2),
-    Variant("pure_max2_t68_force_v4", high=0.68, safe=0.58, min_articles=1, max_articles=2),
-    Variant("pure_max2_t70_force_v4", high=0.70, safe=0.60, min_articles=1, max_articles=2),
+    Variant("pure_max3_t68_v5", high=0.68, safe=0.58, min_articles=0, max_articles=3),
+    Variant("pure_max3_t67_v5", high=0.67, safe=0.57, min_articles=0, max_articles=3),
+    Variant("pure_max3_t69_v5", high=0.69, safe=0.59, min_articles=0, max_articles=3),
+    Variant("pure_max2_t67_v5", high=0.67, safe=0.57, min_articles=0, max_articles=2),
+    Variant("pure_max2_t69_v5", high=0.69, safe=0.59, min_articles=0, max_articles=2),
 )
 
 
