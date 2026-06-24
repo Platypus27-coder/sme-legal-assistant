@@ -112,6 +112,7 @@ def build(device: str = "cpu", batch_size: int | None = None, reset: bool = Fals
             batch_size=bs,
             normalize_embeddings=True,
             show_progress_bar=False,
+            max_length=INDEX.embedding_max_length,
         ).tolist()
         collection.add(
             ids=[c["chunk_id"] for c in batch],

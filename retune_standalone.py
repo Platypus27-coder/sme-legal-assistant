@@ -16,20 +16,39 @@ MAX_ART    = 3      # tối đa 3 articles mỗi câu (ép Precision cực độ
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 BASE        = Path(__file__).parent
-ANSWERS_IN  = BASE / "artifacts" / "output" / "results_partial.jsonl"
+# Ưu tiên results_retune.json (đầy đủ 2000 câu từ repo) hơn results_partial.jsonl
+_ANSWERS_JSON = BASE / "artifacts" / "output" / "results_retune.json"
+_ANSWERS_JSONL = BASE / "artifacts" / "output" / "results_partial.jsonl"
+ANSWERS_IN = _ANSWERS_JSON if _ANSWERS_JSON.exists() else _ANSWERS_JSONL
+
 CACHE_DB    = BASE / "artifacts" / "cache" / "retrieval.db"
 OUT_JSON    = BASE / "artifacts" / "output" / "results_retune.json"
 
 # ─── Load existing answers ────────────────────────────────────────────────────
-print("📖 Loading answers...")
+print(f"📖 Loading answers from {ANSWERS_IN.name}...")
 answers = {}
-with open(ANSWERS_IN, encoding="utf-8") as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        row = json.loads(line)
-        answers[int(row["id"])] = row
+if not ANSWERS_IN.exists():
+    print(f"   ❌ File not found: {ANSWERS_IN}")
+else:
+    with open(ANSWERS_IN, encoding="utf-8") as f:
+        content = f.read().strip()
+        if content:
+            if content.startswith("["):
+                try:
+                    data = json.loads(content)
+                    for row in data:
+                        answers[int(row["id"])] = row
+                except Exception as e:
+                    print(f"   ❌ Lỗi parse JSON Array: {e}")
+            else:
+                for i, line in enumerate(content.splitlines(), 1):
+                    line = line.strip()
+                    if line:
+                        try:
+                            row = json.loads(line)
+                            answers[int(row["id"])] = row
+                        except Exception as e:
+                            pass
 print(f"   {len(answers)} answers loaded")
 
 # ─── Load retrieval cache ─────────────────────────────────────────────────────

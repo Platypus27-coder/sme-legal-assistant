@@ -25,6 +25,7 @@ from vpl.settings import (
     BM25_CORPUS_FILE,
     BM25_ID_MAP_FILE,
     CHUNKS_FILE,
+    INDEX,
     SEARCH,
 )
 from vpl.store.bm25 import tokenize
@@ -145,7 +146,8 @@ class HybridRetriever:
             return []
         try:
             vec = self._embed_model.encode(
-                [query], normalize_embeddings=True, show_progress_bar=False
+                [query], normalize_embeddings=True, show_progress_bar=False,
+                max_length=INDEX.embedding_max_length,
             ).tolist()[0]
             results = self._chroma.query(
                 query_embeddings=[vec],
@@ -191,7 +193,7 @@ class HybridRetriever:
         for c, logit in zip(chunks, logits):
             rerank_s = _sigmoid(float(logit))
             rrf_s = rrf_scores.get(c["chunk_id"], 0) / max_rrf
-            score = 0.8 * rerank_s + 0.2 * rrf_s + _lexical_boost(query, c)
+            score = SEARCH.fusion_reranker_weight * rerank_s + SEARCH.fusion_base_weight * rrf_s + _lexical_boost(query, c)
             result.append(ScoredChunk(chunk=c, score=min(1.0, score)))
         return result
 
@@ -226,4 +228,31 @@ class HybridRetriever:
                 break
 
         results = self._rerank(query, ordered, fused)
-        return sorted(results, key=lambda x: x.score, reverse=True)
+
+        # ------------------------------------------------------------------
+        # Context Window Expansion
+        # Gộp các chunk thuộc cùng một Điều luật để cung cấp context rộng hơn
+        # cho LLM Generator (giảm thiểu bỏ sót do chunking)
+        # ------------------------------------------------------------------
+        expanded_results = []
+        for rc in results:
+            c = rc.chunk
+            article = str((c.get("metadata") or {}).get("formatted_article") or c.get("chunk_id", ""))
+            
+            # Tìm tất cả chunks có cùng article
+            same_article_chunks = [
+                chk for chk in self._chunks.values()
+                if str((chk.get("metadata") or {}).get("formatted_article") or chk.get("chunk_id", "")) == article
+            ]
+            
+            # Sắp xếp theo chunk_id gốc (chunk_id có format {luat}_{id}) để giữ đúng thứ tự đọc
+            same_article_chunks.sort(key=lambda x: str(x.get("chunk_id", "")))
+            
+            # Gộp text
+            expanded_text = "\n".join(chk.get("text", "") for chk in same_article_chunks)
+            
+            new_chunk = dict(c)
+            new_chunk["text"] = expanded_text
+            expanded_results.append(ScoredChunk(chunk=new_chunk, score=rc.score))
+
+        return sorted(expanded_results, key=lambda x: x.score, reverse=True)

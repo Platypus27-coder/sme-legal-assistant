@@ -31,7 +31,11 @@ DEFAULT_CHECKPOINT  = 50   # lưu Drive mỗi 50 câu
 
 # ─── Paths ───────────────────────────────────────────────────────────────────
 BASE        = Path(__file__).parent
-ANSWERS_IN  = BASE / "artifacts" / "output" / "results_partial.jsonl"
+# Ưu tiên results_retune.json (đầy đủ 2000 câu từ repo) hơn results_partial.jsonl
+_ANSWERS_JSON = BASE / "artifacts" / "output" / "results_retune.json"
+_ANSWERS_JSONL = BASE / "artifacts" / "output" / "results_partial.jsonl"
+ANSWERS_IN = _ANSWERS_JSON if _ANSWERS_JSON.exists() else _ANSWERS_JSONL
+
 CACHE_DB    = BASE / "artifacts" / "cache" / "retrieval.db"
 OUT_DIR     = BASE / "artifacts" / "output"
 OUT_JSON    = OUT_DIR / "results_reranked.json"
@@ -55,7 +59,7 @@ def _sigmoid(x: float) -> float:
 
 def save_to_drive(src: Path, dst: Path) -> bool:
     """Copy file lên Drive. Trả về True nếu thành công."""
-    if not DRIVE_DIR.exists():
+    if not DRIVE_DIR.parent.exists():
         return False
     try:
         DRIVE_DIR.mkdir(parents=True, exist_ok=True)
@@ -69,13 +73,32 @@ def save_to_drive(src: Path, dst: Path) -> bool:
 def load_answers(path: Path) -> dict[int, dict]:
     print(f"📖 Loading answers from {path.name}...")
     answers = {}
+    if not path.exists():
+        print(f"   ❌ File not found: {path}")
+        return answers
     with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                row = json.loads(line)
-                answers[int(row["id"])] = row
-    print(f"   ✅ {len(answers)} answers")
+        content = f.read().strip()
+        if not content:
+            return answers
+        if content.startswith("["):
+            # Định dạng JSON Array (results_retune.json)
+            try:
+                data = json.loads(content)
+                for row in data:
+                    answers[int(row["id"])] = row
+            except Exception as e:
+                print(f"   ❌ Lỗi parse JSON Array: {e}")
+        else:
+            # Định dạng JSON Lines (results_partial.jsonl)
+            for i, line in enumerate(content.splitlines(), 1):
+                line = line.strip()
+                if line:
+                    try:
+                        row = json.loads(line)
+                        answers[int(row["id"])] = row
+                    except Exception as e:
+                        print(f"   ⚠️ Lỗi parse dòng {i}: {e}")
+    print(f"   ✅ Loaded {len(answers)} answers")
     return answers
 
 
@@ -158,7 +181,7 @@ def rerank_chunks(reranker, question: str, chunks: list[dict],
 
     if reranker is not None:
         try:
-            pairs  = [(question, str(c.get("text", ""))[:400]) for c in unique]
+            pairs  = [(question, str(c.get("text", ""))) for c in unique]
             logits = reranker.predict(pairs, batch_size=batch_size, show_progress_bar=False)
             scores = [_sigmoid(float(l)) for l in logits]
         except Exception as e:
