@@ -123,12 +123,12 @@ def build(device: str = "cpu", batch_size: int | None = None, reset: bool = Fals
                     enriched = f"{doc_title}: {text}"
             texts.append(enriched)
             
+        model.max_seq_length = INDEX.embedding_max_length
         embeddings = model.encode(
             texts,
             batch_size=bs,
             normalize_embeddings=True,
             show_progress_bar=False,
-            max_length=INDEX.embedding_max_length,
         ).tolist()
         collection.add(
             ids=[c["chunk_id"] for c in batch],

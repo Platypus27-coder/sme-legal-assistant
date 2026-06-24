@@ -145,9 +145,9 @@ class HybridRetriever:
         if self._chroma is None or self._embed_model is None:
             return []
         try:
+            self._embed_model.max_seq_length = INDEX.embedding_max_length
             vec = self._embed_model.encode(
                 [query], normalize_embeddings=True, show_progress_bar=False,
-                max_length=INDEX.embedding_max_length,
             ).tolist()[0]
             results = self._chroma.query(
                 query_embeddings=[vec],
