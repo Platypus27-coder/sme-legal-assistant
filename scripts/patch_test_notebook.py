@@ -33,14 +33,14 @@ markdown_cell = {
     "cell_type": "markdown",
     "metadata": {},
     "source": [
-        "## Cell 5 — (Bứt phá) Tạo tự động cả 5 Variant tối ưu phiên bản V3\n",
+        "## Cell 5 — (Bứt phá) Tạo tự động cả 5 Variant tối ưu phiên bản V4\n",
         "\n",
-        "Script này đã loại bỏ hoàn toàn Lexical Boost để chạy Reranker thuần túy. Dựa trên kết quả **0.4444** cực kỳ thành công của bản `max_articles=2`, phiên bản V3 tập trung tối đa vào tối ưu hóa ngưỡng giới hạn 1 và 2 điều luật:\n",
-        "- `submission_pure_max2_high_v3.zip` (Ngưỡng 0.65, tối đa 2 bài - Dự đoán: **0.446 - 0.450** - Ứng viên số 1!)\n",
-        "- `submission_pure_max2_vhigh_v3.zip` (Ngưỡng 0.68, tối đa 2 bài)\n",
-        "- `submission_pure_max1_base_v3.zip` (Ngưỡng 0.62, tối đa 1 bài)\n",
-        "- `submission_pure_max1_high_v3.zip` (Ngưỡng 0.65, tối đa 1 bài)\n",
-        "- `submission_pure_max2_low_v3.zip` (Ngưỡng 0.60, tối đa 2 bài)"
+        "Dựa trên kết quả **0.4483** cực kỳ xuất sắc của bản `vhigh_v3` (ngưỡng 0.68), phiên bản V4 tập trung tối đa vào tối ưu hóa ngưỡng giới hạn 2 điều luật ở các mức cao hơn, đồng thời kết hợp cơ chế `min_articles=1` (bắt buộc nộp ít nhất 1 bài để giữ Recall):\n",
+        "- `submission_pure_max2_t70_v4.zip` (Ngưỡng 0.70, tối đa 2 bài - Dự đoán: **0.451 - 0.455** - Ứng viên số 1!)\n",
+        "- `submission_pure_max2_t72_v4.zip` (Ngưỡng 0.72, tối đa 2 bài)\n",
+        "- `submission_pure_max2_t75_v4.zip` (Ngưỡng 0.75, tối đa 2 bài)\n",
+        "- `submission_pure_max2_t68_force_v4.zip` (Ngưỡng 0.68, tối đa 2 bài, bắt buộc nộp ít nhất 1 luật)\n",
+        "- `submission_pure_max2_t70_force_v4.zip` (Ngưỡng 0.70, tối đa 2 bài, bắt buộc nộp ít nhất 1 luật)"
     ]
 }
 
