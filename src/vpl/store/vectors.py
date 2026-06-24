@@ -139,6 +139,18 @@ def build(device: str = "cpu", batch_size: int | None = None, reset: bool = Fals
         added += len(batch)
         if added % checkpoint_every == 0 or added == len(new_chunks):
             print(f"  indexed {added}/{len(new_chunks)}...", flush=True)
+            
+            # Checkpoint tự động lên Drive nếu chạy trên Colab để phòng ngừa mất kết nối giữa chừng
+            drive_dir = Path("/content/drive/MyDrive/R2AI_Artifacts_Test")
+            if drive_dir.exists() and added % 10000 == 0:
+                print(f"  ☁️ [Auto-backup Index] Đang sao lưu checkpoint ({added} chunks) lên Drive...", flush=True)
+                try:
+                    import subprocess
+                    drive_tar = drive_dir / "index_built_test.tar.gz"
+                    subprocess.run(['tar', '-czf', str(drive_tar), '-C', str(CHROMA_DIR.parents[1]), 'index'], capture_output=True)
+                    print("  ✅ Checkpoint Index đã được lưu an toàn!", flush=True)
+                except Exception as e:
+                    print(f"  ⚠️ Sao lưu checkpoint Index thất bại: {e}", flush=True)
 
     print(f"✅ ChromaDB index → {CHROMA_DIR} ({added} new chunks, model={model_name})")
     return {"indexed": added, "skipped": len(existing_ids), "model": model_name}
