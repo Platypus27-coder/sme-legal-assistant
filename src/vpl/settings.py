@@ -113,7 +113,7 @@ class IndexConfig:
         "cyhapun/vn-legal-embedding-v1",                    # BGE-M3 fine-tuned legal VN
         "BAAI/bge-m3",                                      # Multilingual, 1024-dim, strong semantic
     )
-    embedding_batch_size: int = 128
+    embedding_batch_size: int = 32
     embedding_max_length: int = 512
 
     # ChromaDB collection name
