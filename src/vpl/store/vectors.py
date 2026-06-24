@@ -106,7 +106,23 @@ def build(device: str = "cpu", batch_size: int | None = None, reset: bool = Fals
     added = 0
     for start in range(0, len(new_chunks), bs):
         batch = new_chunks[start : start + bs]
-        texts = [c.get("text", "") for c in batch]
+        
+        # Làm giàu văn cảnh cho dense vector search
+        texts = []
+        for c in batch:
+            meta = c.get("metadata") or {}
+            doc_title = meta.get("doc_title") or ""
+            article_number = meta.get("article_number") or ""
+            text = c.get("text", "")
+            
+            enriched = text
+            if doc_title:
+                if article_number:
+                    enriched = f"{doc_title} - Điều {article_number}: {text}"
+                else:
+                    enriched = f"{doc_title}: {text}"
+            texts.append(enriched)
+            
         embeddings = model.encode(
             texts,
             batch_size=bs,

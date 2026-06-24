@@ -184,8 +184,24 @@ class HybridRetriever:
                 for c in chunks
             ]
 
+        # Làm giàu văn cảnh cho Reranker để tăng độ chính xác so khớp
+        pairs = []
+        for c in chunks:
+            meta = c.get("metadata") or {}
+            doc_title = meta.get("doc_title") or ""
+            article_number = meta.get("article_number") or ""
+            text = c.get("text", "")
+            
+            enriched = text
+            if doc_title:
+                if article_number:
+                    enriched = f"{doc_title} - Điều {article_number}: {text}"
+                else:
+                    enriched = f"{doc_title}: {text}"
+            pairs.append((query, enriched))
+
         logits = self.reranker.predict(
-            [(query, c["text"]) for c in chunks],
+            pairs,
             batch_size=SEARCH.reranker_batch_size,
             show_progress_bar=False,
         )

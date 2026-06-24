@@ -130,12 +130,24 @@ def build() -> dict[str, Any]:
         raise ValueError("No chunks found. Run `vpl ingest` first.")
     print(f"  {len(chunks)} chunks loaded")
 
-    print(f"Tokenizing {len(chunks)} chunks...")
+    print(f"Tokenizing {len(chunks)} chunks with Contextual Enrichment...")
     corpus_tokens: list[list[str]] = []
     batch = INDEX.bm25_batch_size
     for i in range(0, len(chunks), batch):
         for c in chunks[i : i + batch]:
-            corpus_tokens.append(tokenize(c.get("text", "")))
+            meta = c.get("metadata") or {}
+            doc_title = meta.get("doc_title") or ""
+            article_number = meta.get("article_number") or ""
+            text = c.get("text", "")
+            
+            # Làm giàu văn cảnh: ghép Tiêu đề văn bản + Số điều + Nội dung
+            enriched = text
+            if doc_title:
+                if article_number:
+                    enriched = f"{doc_title} - Điều {article_number}: {text}"
+                else:
+                    enriched = f"{doc_title}: {text}"
+            corpus_tokens.append(tokenize(enriched))
         print(f"  tokenized {min(i + batch, len(chunks))}/{len(chunks)}", flush=True)
 
     print(f"Building BM25 (k1={INDEX.bm25_k1}, b={INDEX.bm25_b})...")
