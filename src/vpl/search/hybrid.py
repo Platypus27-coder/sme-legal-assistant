@@ -261,8 +261,17 @@ class HybridRetriever:
                 if str((chk.get("metadata") or {}).get("formatted_article") or chk.get("chunk_id", "")) == article
             ]
             
-            # Sắp xếp theo chunk_id gốc (chunk_id có format {luat}_{id}) để giữ đúng thứ tự đọc
-            same_article_chunks.sort(key=lambda x: str(x.get("chunk_id", "")))
+            # Sắp xếp theo số Khoản (dạng số học) để đảm bảo Khoản 9 đứng trước Khoản 10, tránh lỗi sắp xếp chữ cái
+            def _sort_chunk_order(chk):
+                meta = chk.get("metadata") or {}
+                p_num = meta.get("paragraph_number") or ""
+                try:
+                    p_val = int(p_num)
+                except ValueError:
+                    p_val = 10**9 if p_num else -1
+                return (p_val, str(chk.get("chunk_id", "")))
+                
+            same_article_chunks.sort(key=_sort_chunk_order)
             
             # Gộp text
             expanded_text = "\n".join(chk.get("text", "") for chk in same_article_chunks)
