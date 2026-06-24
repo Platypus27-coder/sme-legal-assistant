@@ -72,6 +72,7 @@ def patch_pipeline_notebook():
         nb = json.load(f)
 
     patched_c3 = False
+    patched_c5 = False
     patched_c6 = False
     patched_c7 = False
     patched_c8 = False
@@ -98,6 +99,35 @@ def patch_pipeline_notebook():
                         new_source.append(line)
                 cell["source"] = new_source
                 patched_c3 = True
+
+            # Patch Cell 5: Force Rebuild the Index to apply Contextual Enrichment
+            if "BM25_LOCAL" in source_str and "CHROMA_DB" in source_str and "index_built.tar.gz" in source_str:
+                new_source = []
+                # Check if already patched to avoid duplicating FORCE_REBUILD
+                if "FORCE_REBUILD" not in source_str:
+                    for line in source:
+                        if "if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):" in line:
+                            new_source.append("FORCE_REBUILD = True  # Bắt buộc build lại để cập nhật Contextual Enrichment đột phá mới!\n\n")
+                            new_source.append("if FORCE_REBUILD:\n")
+                            new_source.append("    print('⚠️ FORCE_REBUILD is True. Bỏ qua restore từ Drive, tiến hành xóa index cũ để build mới...')\n")
+                            new_source.append("    if os.path.exists('artifacts/index'):\n")
+                            new_source.append("        shutil.rmtree('artifacts/index')\n")
+                            new_source.append("else:\n")
+                            new_source.append("    if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):\n")
+                        elif "if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):" not in line and any(x in line for x in [
+                            "print('📦 Restore BM25 từ Drive...')",
+                            "os.makedirs('artifacts/index/bm25', exist_ok=True)",
+                            "shutil.copy2(f'{DRIVE_INDEX}/bm25/{f}', f'artifacts/index/bm25/{f}')",
+                            "print(f'✅ BM25 OK | ChromaDB: {\"✅\" if os.path.exists(CHROMA_DB) else \"❌ cần build mới (BGE-M3)\"}')"
+                        ]):
+                            # Indent existing restore lines inside the else block
+                            new_source.append("    " + line)
+                        else:
+                            new_source.append(line)
+                    cell["source"] = new_source
+                    patched_c5 = True
+                else:
+                    patched_c5 = True
 
             # Patch Cell 6: Database paths for retrieval
             if "DB_LOCAL" in source_str and "DRIVE_DB" in source_str and "run.py" in source_str:
@@ -154,7 +184,7 @@ def patch_pipeline_notebook():
 
     with open(nb_path, "w", encoding="utf-8") as f:
         json.dump(nb, f, indent=1, ensure_ascii=False)
-    print(f"SUCCESS: Patched {nb_path.name} (Cell 3: {patched_c3}, Cell 6: {patched_c6}, Cell 7: {patched_c7}, Cell 8: {patched_c8})")
+    print(f"SUCCESS: Patched {nb_path.name} (Cell 3: {patched_c3}, Cell 5: {patched_c5}, Cell 6: {patched_c6}, Cell 7: {patched_c7}, Cell 8: {patched_c8})")
 
 
 if __name__ == "__main__":
