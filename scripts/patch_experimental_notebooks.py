@@ -77,109 +77,272 @@ def patch_pipeline_notebook():
     patched_c7 = False
     patched_c8 = False
 
+    # Định nghĩa nội dung mới hoàn toàn cho các Cell để tránh trùng lặp cú pháp
+    c3_source = [
+        "import os, sys, shutil, subprocess, time\n",
+        "\n",
+        "DRIVE_DIR = '/content/drive/MyDrive/R2AI_Artifacts'\n",
+        "WORK_DIR  = '/content/sme-legal-assistant'\n",
+        "REPO_URL  = 'https://github.com/Platypus27-coder/sme-legal-assistant.git'\n",
+        "BRANCH    = 'experiment-rag-upgrade'\n",
+        "\n",
+        "# 🚀 CỜ ĐIỀU KHIỂN ĐỘT PHÁ\n",
+        "RESET_PIPELINE = True  # Đặt thành True khi chạy lần đầu để sinh kết quả mới đột phá. Đặt thành False để RESUME nếu bị ngắt.\n",
+        "\n",
+        "if os.path.exists(WORK_DIR): \n",
+        "    shutil.rmtree(WORK_DIR)\n",
+        "\n",
+        "print(f'⬇️ Clone branch {BRANCH} từ Github...')\n",
+        "r = subprocess.run(['git', 'clone', '-b', BRANCH, REPO_URL, WORK_DIR], capture_output=True, text=True)\n",
+        "if r.returncode != 0:\n",
+        "    print(f'❌ Lỗi Clone: {r.stderr}')\n",
+        "    raise SystemExit\n",
+        "\n",
+        "for d in ['output', 'cache', 'raw', 'index']:\n",
+        "    os.makedirs(f'{WORK_DIR}/artifacts/{d}', exist_ok=True)\n",
+        "os.makedirs(f'{WORK_DIR}/data', exist_ok=True)\n",
+        "\n",
+        "# Khôi phục tệp câu hỏi gốc\n",
+        "if os.path.exists(f'{DRIVE_DIR}/R2AIStage1DATA.json'):\n",
+        "    shutil.copy2(f'{DRIVE_DIR}/R2AIStage1DATA.json', f'{WORK_DIR}/data/R2AIStage1DATA.json')\n",
+        "    print('✅ Khôi phục thành công file câu hỏi R2AIStage1DATA.json')\n",
+        "\n",
+        "# Xử lý RESET hoặc RESUME\n",
+        "if RESET_PIPELINE:\n",
+        "    print('\\n⚠️ RESET_PIPELINE = True: Chạy mới hoàn toàn!')\n",
+        "    print('👉 Bỏ qua việc khôi phục các tệp kết quả cũ từ Drive để tránh bỏ sót các tính năng RAG mới.')\n",
+        "    # Sao lưu các tệp cũ trên Drive để tránh ghi đè mất dữ liệu quý giá của bạn\n",
+        "    timestamp = time.strftime('%Y%m%d_%H%M%S')\n",
+        "    for old_file, backup_name in [\n",
+        "        ('retrieval_hybrid_test.db', f'retrieval_hybrid_test_backup_{timestamp}.db'),\n",
+        "        ('results_partial_test.jsonl', f'results_partial_test_backup_{timestamp}.jsonl'),\n",
+        "        ('results_reranked_checkpoint_test.json', f'results_reranked_checkpoint_test_backup_{timestamp}.json')\n",
+        "    ]:\n",
+        "        path = f'{DRIVE_DIR}/{old_file}'\n",
+        "        if os.path.exists(path):\n",
+        "            shutil.move(path, f'{DRIVE_DIR}/{backup_name}')\n",
+        "            print(f'   📦 Đã sao lưu tệp cũ trên Drive: {old_file} -> {backup_name}')\n",
+        "else:\n",
+        "    print('\\n🔄 RESET_PIPELINE = False: Chế độ Resume (Chạy tiếp)!')\n",
+        "    # Khôi phục kết quả sinh một phần cũ để chạy tiếp câu dang dở\n",
+        "    if os.path.exists(f'{DRIVE_DIR}/results_partial_test.jsonl'):\n",
+        "        shutil.copy2(f'{DRIVE_DIR}/results_partial_test.jsonl', f'{WORK_DIR}/artifacts/output/results_partial_test.jsonl')\n",
+        "        print('✅ Khôi phục kết quả đang chạy dở: results_partial_test.jsonl')\n",
+        "\n",
+        "sys.path.insert(0, f'{WORK_DIR}/src')\n",
+        "os.chdir(WORK_DIR)\n",
+        "\n",
+        "from vpl.settings import SEARCH\n",
+        "print(f'\\n✅ Cấu hình hệ thống hiện tại: high_conf={SEARCH.high_conf_threshold}, max_art={SEARCH.max_articles}')\n",
+        "print('✅ Cell 3 Done!')\n"
+    ]
+
+    c5_source = [
+        "import os, shutil, subprocess\n",
+        "DRIVE_DIR   = '/content/drive/MyDrive/R2AI_Artifacts'\n",
+        "BM25_LOCAL  = 'artifacts/index/bm25/corpus.pkl'\n",
+        "CHROMA_DB   = 'artifacts/index/chroma/chroma.sqlite3'\n",
+        "DRIVE_TAR   = f'{DRIVE_DIR}/index_built.tar.gz'\n",
+        "DRIVE_INDEX = f'{DRIVE_DIR}/index'\n",
+        "\n",
+        "# Sử dụng cờ RESET_PIPELINE từ Cell 3 để quyết định có ép buộc rebuild hay không\n",
+        "force_rebuild = RESET_PIPELINE\n",
+        "\n",
+        "if force_rebuild:\n",
+        "    print('⚠️ RESET_PIPELINE = True. Bỏ qua index cũ trên Drive, tiến hành xóa index cũ để xây dựng index làm giàu văn cảnh mới...')\n",
+        "    if os.path.exists('artifacts/index'):\n",
+        "        shutil.rmtree('artifacts/index')\n",
+        "else:\n",
+        "    if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):\n",
+        "        print('📦 Khôi phục BM25 & ChromaDB từ Drive...')\n",
+        "        os.makedirs('artifacts/index/bm25', exist_ok=True)\n",
+        "        for f in os.listdir(f'{DRIVE_INDEX}/bm25'):\n",
+        "            shutil.copy2(f'{DRIVE_INDEX}/bm25/{f}', f'artifacts/index/bm25/{f}')\n",
+        "        if os.path.exists(f'{DRIVE_INDEX}/chroma/chroma.sqlite3'):\n",
+        "            os.makedirs('artifacts/index/chroma', exist_ok=True)\n",
+        "            shutil.copy2(f'{DRIVE_INDEX}/chroma/chroma.sqlite3', CHROMA_DB)\n",
+        "        print(f'✅ BM25 OK | ChromaDB: {\"✅\" if os.path.exists(CHROMA_DB) else \"❌ cần build mới\"}')\n",
+        "\n",
+        "if not os.path.exists(BM25_LOCAL) or not os.path.exists(CHROMA_DB):\n",
+        "    print('🔄 Bắt đầu xây dựng mới Index (BM25 + ChromaDB) với Làm giàu văn cảnh — ~45 phút...')\n",
+        "    subprocess.run(['python', 'run.py', 'index', '--device', 'cuda', '--reset'], capture_output=False)\n",
+        "\n",
+        "if os.path.exists(BM25_LOCAL):\n",
+        "    print('\\n☁️ Sao lưu index mới lên Drive để tái sử dụng...')\n",
+        "    subprocess.run(['tar', '-czf', DRIVE_TAR, '-C', 'artifacts', 'index'], capture_output=True)\n",
+        "    sz = os.path.getsize(DRIVE_TAR) / 1024 / 1024\n",
+        "    print(f'☁️ index_built.tar.gz ({sz:.0f}MB) đã được lưu an toàn!')\n",
+        "\n",
+        "for p, label in [(BM25_LOCAL,'BM25'), (CHROMA_DB,'ChromaDB')]:\n",
+        "    ok = os.path.exists(p)\n",
+        "    sz = f'{os.path.getsize(p)/1024/1024:.0f}MB' if ok else ''\n",
+        "    print(f'  {\"✅\" if ok else \"❌\"} {label} {sz}')\n",
+        "print('\\n✅ Cell 5 Done!')\n"
+    ]
+
+    c6_source = [
+        "# Cell 6: Hybrid Retrieve với background backup thread\n",
+        "import os, shutil, sqlite3, subprocess, threading, time\n",
+        "\n",
+        "DRIVE_DIR = '/content/drive/MyDrive/R2AI_Artifacts'\n",
+        "DB_LOCAL  = 'artifacts/cache/retrieval_test.db'\n",
+        "DRIVE_DB  = f'{DRIVE_DIR}/retrieval_hybrid_test.db'\n",
+        "BACKUP_INTERVAL = 300  # 5 phút sao lưu một lần\n",
+        "\n",
+        "# Khôi phục DB từ Drive nếu chạy ở chế độ Resume (RESET_PIPELINE = False)\n",
+        "if not RESET_PIPELINE and os.path.exists(DRIVE_DB) and not os.path.exists(DB_LOCAL):\n",
+        "    shutil.copy2(DRIVE_DB, DB_LOCAL)\n",
+        "    try:\n",
+        "        n = sqlite3.connect(DB_LOCAL).execute('SELECT COUNT(*) FROM retrieval_cache').fetchone()[0]\n",
+        "        print(f'📦 Đã khôi phục retrieval_test.db từ Drive ({n}/2000 câu)')\n",
+        "    except:\n",
+        "        os.remove(DB_LOCAL)\n",
+        "        print('⚠️ DB khôi phục bị lỗi, bắt đầu lại')\n",
+        "\n",
+        "done = 0\n",
+        "if os.path.exists(DB_LOCAL):\n",
+        "    try:\n",
+        "        done = sqlite3.connect(DB_LOCAL).execute('SELECT COUNT(*) FROM retrieval_cache').fetchone()[0]\n",
+        "    except: done = 0\n",
+        "\n",
+        "if done >= 2000:\n",
+        "    print(f'✅ Đã retrieve đủ 2000/2000 câu — Bỏ qua!')\n",
+        "else:\n",
+        "    print(f'🔄 Bắt đầu chạy Hybrid Retrieve mới: còn {2000-done} câu cần tìm kiếm...')\n",
+        "    print(f'☁️ Tự động sao lưu tiến trình lên Drive mỗi {BACKUP_INTERVAL//60} phút')\n",
+        "\n",
+        "    # Background backup thread\n",
+        "    stop_backup = threading.Event()\n",
+        "    def _backup_loop():\n",
+        "        count = 0\n",
+        "        while not stop_backup.is_set():\n",
+        "            stop_backup.wait(BACKUP_INTERVAL)\n",
+        "            if stop_backup.is_set(): break\n",
+        "            if os.path.exists(DB_LOCAL):\n",
+        "                try:\n",
+        "                    shutil.copy2(DB_LOCAL, DRIVE_DB)\n",
+        "                    n = sqlite3.connect(DB_LOCAL).execute('SELECT COUNT(*) FROM retrieval_cache').fetchone()[0]\n",
+        "                    count += 1\n",
+        "                    print(f'   ☁️ [Auto-backup #{count}] {n}/2000 câu đã đồng bộ -> Drive')\n",
+        "                except Exception as e:\n",
+        "                    print(f'   ⚠️ Đồng bộ thất bại: {e}')\n",
+        "\n",
+        "    backup_thread = threading.Thread(target=_backup_loop, daemon=True)\n",
+        "    backup_thread.start()\n",
+        "\n",
+        "    try:\n",
+        "        subprocess.run(\n",
+        "            ['python', 'run.py', 'retrieve',\n",
+        "             '--questions', 'data/R2AIStage1DATA.json',\n",
+        "             '--device', 'cuda'],\n",
+        "            capture_output=False\n",
+        "        )\n",
+        "    finally:\n",
+        "        stop_backup.set()\n",
+        "\n",
+        "    if os.path.exists(DB_LOCAL):\n",
+        "        shutil.copy2(DB_LOCAL, DRIVE_DB)\n",
+        "        n = sqlite3.connect(DB_LOCAL).execute('SELECT COUNT(*) FROM retrieval_cache').fetchone()[0]\n",
+        "        print(f'\\n☁️ Sao lưu lần cuối thành công: {n}/2000 câu đã lưu an toàn!')\n",
+        "\n",
+        "print('\\n✅ Cell 6 Done!')\n"
+    ]
+
+    c7_source = [
+        "# Cell 7: Reranker + Retune\n",
+        "import os, shutil, subprocess\n",
+        "\n",
+        "DRIVE_DIR = '/content/drive/MyDrive/R2AI_Artifacts'\n",
+        "ckpt = f'{DRIVE_DIR}/results_reranked_checkpoint_test.json'\n",
+        "\n",
+        "# Khôi phục checkpoint nếu chạy ở chế độ Resume (RESET_PIPELINE = False)\n",
+        "if not RESET_PIPELINE and os.path.exists(ckpt):\n",
+        "    import json\n",
+        "    try:\n",
+        "        done_count = len(json.loads(open(ckpt, encoding='utf-8').read()))\n",
+        "        print(f'🔄 Tìm thấy checkpoint đang chạy dở: {done_count}/2000 câu -> TIẾP TỤC CHẠY!')\n",
+        "    except:\n",
+        "        print('⚠️ Checkpoint cũ bị lỗi, bắt đầu sinh lại từ đầu')\n",
+        "else:\n",
+        "    print('🆕 Chạy mới hoàn toàn (không khôi phục checkpoint)')\n",
+        "\n",
+        "print('🎯 THAM SỐ ĐỈNH CAO: HIGH_CONF=0.68 | SAFE=0.58 | MAX_ART=2')\n",
+        "print('☁️ Tự động lưu checkpoint mỗi 50 câu lên Drive')\n",
+        "\n",
+        "subprocess.run(\n",
+        "    ['python', 'rerank_retune.py',\n",
+        "     '--high-conf', '0.68', '--safe', '0.58',\n",
+        "     '--min-art', '0', '--max-art', '2',\n",
+        "     '--device', 'cuda', '--batch-size', '64',\n",
+        "     '--checkpoint-every', '50'],\n",
+        "    capture_output=False\n",
+        ")\n",
+        "\n",
+        "out_zip = 'artifacts/output/submission_reranked_test.zip'\n",
+        "if os.path.exists(out_zip):\n",
+        "    sz = os.path.getsize(out_zip) / 1024 / 1024\n",
+        "    shutil.copy2(out_zip, f'{DRIVE_DIR}/submission_reranked_test.zip')\n",
+        "    print(f'\\n🏆 submission_reranked_test.zip ({sz:.1f}MB) đã được xuất thành công!')\n",
+        "    print(f'☁️ Đường dẫn trên Drive: {DRIVE_DIR}/submission_reranked_test.zip')\n",
+        "    print('\\n📥 HÃY TẢI FILE ZIP NÀY VỀ VÀ NỘP LÊN KAGGLE ĐỂ BỨT PHÁ ĐIỂM SỐ!')\n",
+        "else:\n",
+        "    print('⚠️ Chưa hoàn thành! Chạy lại cell này để tiếp tục hành trình.')\n",
+        "print('\\n✅ Cell 7 Done!')\n"
+    ]
+
+    c8_source = [
+        "import os, shutil, subprocess\n",
+        "DRIVE_DIR = '/content/drive/MyDrive/R2AI_Artifacts'\n",
+        "\n",
+        "# ── Chỉnh số này ──\n",
+        "HIGH_CONF = 0.68\n",
+        "SAFE      = 0.58\n",
+        "MAX_ART   = 2\n",
+        "# ──────────────────\n",
+        "\n",
+        "print(f'🔧 HIGH_CONF={HIGH_CONF}, SAFE={SAFE}, MAX_ART={MAX_ART}')\n",
+        "subprocess.run(\n",
+        "    ['python', 'rerank_retune.py',\n",
+        "     '--high-conf', str(HIGH_CONF), '--safe', str(SAFE),\n",
+        "     '--min-art', '0', '--max-art', str(MAX_ART),\n",
+        "     '--device', 'cuda', '--batch-size', '64', '--reset'],\n",
+        "    capture_output=False\n",
+        ")\n",
+        "src = 'artifacts/output/submission_reranked_test.zip'\n",
+        "tag = f'{HIGH_CONF}_{MAX_ART}_{SAFE}'.replace('.', '')\n",
+        "if os.path.exists(src):\n",
+        "    shutil.copy2(src, f'{DRIVE_DIR}/submission_{tag}.zip')\n",
+        "    print(f'✅ submission_{tag}.zip saved to Drive')\n"
+    ]
+
     for cell in nb["cells"]:
         if cell.get("cell_type") == "code":
             source = cell.get("source", [])
             source_str = "".join(source)
 
-            # Patch Cell 3: Branch & Restore Files
+            # Replace Cell 3
             if "REPO_URL" in source_str and "BRANCH" in source_str:
-                new_source = []
-                for line in source:
-                    if "BRANCH" in line and "=" in line:
-                        new_source.append("BRANCH    = 'experiment-rag-upgrade'\n")
-                    elif "results_partial.jsonl" in line and "shutil.copy2" in line:
-                        new_source.append("if os.path.exists(f'{DRIVE_DIR}/results_partial_test.jsonl'):\n")
-                        new_source.append("    shutil.copy2(f'{DRIVE_DIR}/results_partial_test.jsonl', f'{WORK_DIR}/artifacts/output/results_partial_test.jsonl')\n")
-                        new_source.append("    print('[OK] Restored results_partial_test.jsonl')\n")
-                        new_source.append("elif os.path.exists(f'{DRIVE_DIR}/results_partial.jsonl'):\n")
-                        new_source.append("    shutil.copy2(f'{DRIVE_DIR}/results_partial.jsonl', f'{WORK_DIR}/artifacts/output/results_partial_test.jsonl')\n")
-                        new_source.append("    print('[OK] Restored results_partial.jsonl as results_partial_test.jsonl')\n")
-                    else:
-                        new_source.append(line)
-                cell["source"] = new_source
+                cell["source"] = c3_source
                 patched_c3 = True
 
-            # Patch Cell 5: Force Rebuild the Index to apply Contextual Enrichment
-            if "BM25_LOCAL" in source_str and "CHROMA_DB" in source_str and "index_built.tar.gz" in source_str:
-                new_source = []
-                # Check if already patched to avoid duplicating FORCE_REBUILD
-                if "FORCE_REBUILD" not in source_str:
-                    for line in source:
-                        if "if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):" in line:
-                            new_source.append("FORCE_REBUILD = True  # Bắt buộc build lại để cập nhật Contextual Enrichment đột phá mới!\n\n")
-                            new_source.append("if FORCE_REBUILD:\n")
-                            new_source.append("    print('⚠️ FORCE_REBUILD is True. Bỏ qua restore từ Drive, tiến hành xóa index cũ để build mới...')\n")
-                            new_source.append("    if os.path.exists('artifacts/index'):\n")
-                            new_source.append("        shutil.rmtree('artifacts/index')\n")
-                            new_source.append("else:\n")
-                            new_source.append("    if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):\n")
-                        elif "if os.path.exists(f'{DRIVE_INDEX}/bm25/corpus.pkl'):" not in line and any(x in line for x in [
-                            "print('📦 Restore BM25 từ Drive...')",
-                            "os.makedirs('artifacts/index/bm25', exist_ok=True)",
-                            "shutil.copy2(f'{DRIVE_INDEX}/bm25/{f}', f'artifacts/index/bm25/{f}')",
-                            "print(f'✅ BM25 OK | ChromaDB: {\"✅\" if os.path.exists(CHROMA_DB) else \"❌ cần build mới (BGE-M3)\"}')"
-                        ]):
-                            # Indent existing restore lines inside the else block
-                            new_source.append("    " + line)
-                        else:
-                            new_source.append(line)
-                    cell["source"] = new_source
-                    patched_c5 = True
-                else:
-                    patched_c5 = True
+            # Replace Cell 5
+            elif "BM25_LOCAL" in source_str and "CHROMA_DB" in source_str and "index_built.tar.gz" in source_str:
+                cell["source"] = c5_source
+                patched_c5 = True
 
-            # Patch Cell 6: Database paths for retrieval
-            if "DB_LOCAL" in source_str and "DRIVE_DB" in source_str and "run.py" in source_str:
-                new_source = []
-                for line in source:
-                    if "DB_LOCAL" in line and "retrieval.db" in line:
-                        new_source.append("DB_LOCAL  = 'artifacts/cache/retrieval_test.db'\n")
-                    elif "DRIVE_DB" in line and "retrieval_hybrid.db" in line:
-                        new_source.append("DRIVE_DB  = f'{DRIVE_DIR}/retrieval_hybrid_test.db'\n")
-                    elif "SELECT COUNT(*)" in line:
-                        new_source.append(line.replace("retrieval_cache", "retrieval_cache"))
-                    else:
-                        new_source.append(line)
-                cell["source"] = new_source
+            # Replace Cell 6
+            elif "DB_LOCAL" in source_str and "DRIVE_DB" in source_str and "run.py" in source_str:
+                cell["source"] = c6_source
                 patched_c6 = True
 
-            # Patch Cell 7: Checkpoint path & Force Peak parameters (0.68/0.58/max2)
-            if "rerank_retune.py" in source_str and "checkpoint-every" in source_str:
-                new_source = []
-                for line in source:
-                    # Replace filenames with test suffix if not already done
-                    line = line.replace("results_reranked_checkpoint.json", "results_reranked_checkpoint_test.json")
-                    line = line.replace("submission_reranked.zip", "submission_reranked_test.zip")
-                    
-                    # Force Peak parameters in command args
-                    if "'--high-conf'" in line:
-                        line = "     '--high-conf', '0.68',\n"
-                    elif "'--safe'" in line:
-                        line = "     '--safe', '0.58',\n"
-                    elif "'--max-art'" in line:
-                        line = "     '--max-art', '2',\n"
-                    
-                    # Update print statements to show correct settings
-                    if "HIGH_CONF=" in line:
-                        line = "    print('   HIGH_CONF=0.68 | SAFE=0.58 | MAX_ART=2')\n"
-                    
-                    new_source.append(line)
-                cell["source"] = new_source
+            # Replace Cell 7
+            elif "rerank_retune.py" in source_str and "checkpoint-every" in source_str:
+                cell["source"] = c7_source
                 patched_c7 = True
 
-            # Patch Cell 8 (Optional retune cell): Force Peak parameters
-            if "HIGH_CONF =" in source_str and "SAFE      =" in source_str and "MAX_ART   =" in source_str:
-                new_source = []
-                for line in source:
-                    if "HIGH_CONF =" in line:
-                        line = "HIGH_CONF = 0.68\n"
-                    elif "SAFE      =" in line:
-                        line = "SAFE      = 0.58\n"
-                    elif "MAX_ART   =" in line:
-                        line = "MAX_ART   = 2\n"
-                    new_source.append(line)
-                cell["source"] = new_source
+            # Replace Cell 8
+            elif "HIGH_CONF =" in source_str and "SAFE      =" in source_str and "MAX_ART   =" in source_str:
+                cell["source"] = c8_source
                 patched_c8 = True
 
     with open(nb_path, "w", encoding="utf-8") as f:
