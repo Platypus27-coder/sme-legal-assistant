@@ -37,12 +37,12 @@ BM25_ID_MAP_FILE = BM25_DIR / "id_map.json"
 CHROMA_DIR = INDEX_DIR / "chroma"
 
 # Cache
-RETRIEVAL_DB_FILE = CACHE_DIR / "retrieval.db"
+RETRIEVAL_DB_FILE = CACHE_DIR / "retrieval_test.db"
 
 # Output
-RESULTS_STREAM_FILE = OUTPUT_DIR / "results_partial.jsonl"
-RESULTS_FILE = OUTPUT_DIR / "results.json"
-SUBMISSION_FILE = OUTPUT_DIR / "submission.zip"
+RESULTS_STREAM_FILE = OUTPUT_DIR / "results_partial_test.jsonl"
+RESULTS_FILE = OUTPUT_DIR / "results_test.json"
+SUBMISSION_FILE = OUTPUT_DIR / "submission_test.zip"
 
 
 # ---------------------------------------------------------------------------
