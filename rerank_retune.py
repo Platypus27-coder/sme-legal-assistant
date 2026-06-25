@@ -16,11 +16,12 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import shutil
 import sqlite3
 import zipfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 # ─── Mặc định tốt nhất (0.3976) ─────────────────────────────────────────────
 DEFAULT_HIGH_CONF   = 0.62
@@ -88,6 +89,55 @@ def _sigmoid(x: float) -> float:
         return 1.0 / (1.0 + math.exp(-x))
     e = math.exp(x)
     return e / (1.0 + e)
+
+
+LEGAL_BASIS_RE = re.compile(
+    r"\n+C(?:ơ|Æ¡)\s+s(?:ở|á»Ÿ)\s+ph(?:á|Ă¡)p\s+l(?:ý|Ă½)\s+tham\s+chi(?:ếu|áº¿u):.*?"
+    r"(?=\n+C(?:ả|áº£)nh\s+b(?:á|Ă¡)o\s+gi(?:ới|á»›i)\s+h(?:ạn|áº¡n):|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+WARNING_RE = re.compile(
+    r"\n+C(?:ả|áº£)nh\s+b(?:á|Ă¡)o\s+gi(?:ới|á»›i)\s+h(?:ạn|áº¡n):.*?\Z",
+    re.IGNORECASE | re.DOTALL,
+)
+
+def _article_label(formatted: str) -> str:
+    parts = formatted.split("|")
+    return parts[-1] if parts else ""
+
+def _doc_label(formatted: str) -> str:
+    parts = formatted.split("|")
+    return parts[-1] if len(parts) >= 2 else ""
+
+def _dedupe_list(items: Iterable[str]) -> list[str]:
+    seen = set()
+    res = []
+    for x in items:
+        if x not in seen:
+            seen.add(x)
+            res.append(x)
+    return res
+
+def _basis_line(selected: list[tuple[float, dict[str, Any]]]) -> str:
+    refs = []
+    for _, meta in selected:
+        article = str(meta.get("article_number") or _article_label(str(meta.get("formatted_article") or "")))
+        doc = _doc_label(str(meta.get("formatted_doc") or ""))
+        if article and doc:
+            refs.append(f"{article} của {doc}")
+    refs = _dedupe_list(refs)
+    if not refs:
+        return ""
+    return "\n\nCơ sở pháp lý tham chiếu: " + "; ".join(refs) + "."
+
+def _rewrite_answer(answer: str, selected: list[tuple[float, dict[str, Any]]]) -> str:
+    warning_match = WARNING_RE.search(answer)
+    warning = warning_match.group(0) if warning_match else ""
+    body = WARNING_RE.sub("", answer)
+    body = LEGAL_BASIS_RE.sub("", body).rstrip()
+    basis = _basis_line(selected)
+    return (body + basis + warning).strip()
 
 
 def save_to_drive(src: Path, dst: Path) -> bool:
@@ -323,7 +373,7 @@ def main():
             results.append({
                 "id":                row["id"],
                 "question":          row["question"],
-                "answer":            row["answer"],
+                "answer":            _rewrite_answer(str(row.get("answer") or ""), selected),
                 "relevant_docs":     dedupe([str(m.get("formatted_doc")     or "") for _, m in selected]),
                 "relevant_articles": dedupe([str(m.get("formatted_article") or "") for _, m in selected]),
             })
@@ -338,6 +388,24 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUT_JSON, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
+
+    # Chạy validation
+    try:
+        from vpl.submit import validate
+        q_path = BASE / "data" / "R2AIStage1DATA.json"
+        if q_path.exists():
+            questions = json.loads(q_path.read_text(encoding="utf-8"))
+            errors = validate(results, questions)
+            if errors:
+                print(f"⚠️ Validation warnings ({len(errors)}):")
+                for e in errors[:20]:
+                    print(f"  - {e}")
+            else:
+                print("✅ Submission validation passed with 0 errors!")
+        else:
+            print(f"⚠️ Không tìm thấy file đề thi {q_path.name} để validate.")
+    except Exception as e:
+        print(f"⚠️ Không thể validate: {e}")
 
     with zipfile.ZipFile(OUT_ZIP, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(OUT_JSON, "results.json")
