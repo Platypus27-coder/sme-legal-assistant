@@ -35,6 +35,8 @@ BASE        = Path(__file__).parent
 OUT_DIR     = BASE / "artifacts" / "output"
 
 # 1. Tự động phát hiện chế độ TEST cô lập
+import time
+TIMESTAMP = int(time.time())
 _DB_TEST = BASE / "artifacts" / "cache" / "retrieval_test.db"
 _DB_PROD = BASE / "artifacts" / "cache" / "retrieval.db"
 IS_TEST = _DB_TEST.exists() or Path("/content/drive/MyDrive/R2AI_Artifacts_Test").exists()
@@ -55,11 +57,11 @@ if IS_TEST:
     ANSWERS_IN = next((c for c in candidates if c.exists()), candidates[0])
     
     OUT_JSON    = OUT_DIR / "results_reranked_test.json"
-    OUT_ZIP     = OUT_DIR / "submission_reranked_test.zip"
+    OUT_ZIP     = OUT_DIR / f"submission_reranked_test_{TIMESTAMP}.zip"
     CKPT_JSON   = OUT_DIR / "results_reranked_checkpoint_test.json"
     
     DRIVE_CKPT  = DRIVE_DIR / "results_reranked_checkpoint_test.json"
-    DRIVE_ZIP   = DRIVE_DIR / "submission_reranked_test.zip"
+    DRIVE_ZIP   = DRIVE_DIR / OUT_ZIP.name
 else:
     print("\n🚀 [MODE] Khởi chạy chế độ chính thức (PROD mode)")
     CACHE_DB = _DB_PROD
