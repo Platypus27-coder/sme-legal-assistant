@@ -342,7 +342,7 @@ def main():
     with zipfile.ZipFile(OUT_ZIP, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(OUT_JSON, "results.json")
 
-    save_to_drive(OUT_JSON, DRIVE_DIR / "results_reranked.json")
+    save_to_drive(OUT_JSON, DRIVE_DIR / OUT_JSON.name)
     ok = save_to_drive(OUT_ZIP, DRIVE_ZIP)
 
     # Xoá checkpoint sau khi xong
