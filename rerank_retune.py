@@ -31,21 +31,54 @@ DEFAULT_CHECKPOINT  = 50   # lưu Drive mỗi 50 câu
 
 # ─── Paths ───────────────────────────────────────────────────────────────────
 BASE        = Path(__file__).parent
-# Ưu tiên results_retune.json (đầy đủ 2000 câu từ repo) hơn results_partial.jsonl
-_ANSWERS_JSON = BASE / "artifacts" / "output" / "results_retune.json"
-_ANSWERS_JSONL = BASE / "artifacts" / "output" / "results_partial.jsonl"
-ANSWERS_IN = _ANSWERS_JSON if _ANSWERS_JSON.exists() else _ANSWERS_JSONL
-
-CACHE_DB    = BASE / "artifacts" / "cache" / "retrieval.db"
 OUT_DIR     = BASE / "artifacts" / "output"
-OUT_JSON    = OUT_DIR / "results_reranked.json"
-OUT_ZIP     = OUT_DIR / "submission_reranked.zip"
-CKPT_JSON   = OUT_DIR / "results_reranked_checkpoint.json"  # file resume duy nhất
 
-# Google Drive (tự động dùng khi chạy Colab)
-DRIVE_DIR   = Path("/content/drive/MyDrive/R2AI_Artifacts")
-DRIVE_CKPT  = DRIVE_DIR / "results_reranked_checkpoint.json"
-DRIVE_ZIP   = DRIVE_DIR / "submission_reranked.zip"
+# 1. Tự động phát hiện chế độ TEST cô lập
+_DB_TEST = BASE / "artifacts" / "cache" / "retrieval_test.db"
+_DB_PROD = BASE / "artifacts" / "cache" / "retrieval.db"
+IS_TEST = _DB_TEST.exists() or Path("/content/drive/MyDrive/R2AI_Artifacts_Test").exists()
+
+# 2. Thiết lập đường dẫn động thông minh
+if IS_TEST:
+    print("\n🧪 [MODE] Khởi chạy chế độ kiểm thử (TEST isolated mode)")
+    CACHE_DB = _DB_TEST
+    DRIVE_DIR = Path("/content/drive/MyDrive/R2AI_Artifacts_Test")
+    
+    # Thứ tự ưu tiên tìm kiếm câu trả lời đầu vào trong chế độ TEST
+    candidates = [
+        OUT_DIR / "results_retune.json",
+        OUT_DIR / "results_test.json",
+        OUT_DIR / "results_partial_test.jsonl",
+        OUT_DIR / "results_partial.jsonl"
+    ]
+    ANSWERS_IN = next((c for c in candidates if c.exists()), candidates[0])
+    
+    OUT_JSON    = OUT_DIR / "results_reranked_test.json"
+    OUT_ZIP     = OUT_DIR / "submission_reranked_test.zip"
+    CKPT_JSON   = OUT_DIR / "results_reranked_checkpoint_test.json"
+    
+    DRIVE_CKPT  = DRIVE_DIR / "results_reranked_checkpoint_test.json"
+    DRIVE_ZIP   = DRIVE_DIR / "submission_reranked_test.zip"
+else:
+    print("\n🚀 [MODE] Khởi chạy chế độ chính thức (PROD mode)")
+    CACHE_DB = _DB_PROD
+    DRIVE_DIR = Path("/content/drive/MyDrive/R2AI_Artifacts")
+    
+    _ANSWERS_JSON = OUT_DIR / "results_retune.json"
+    _ANSWERS_JSONL = OUT_DIR / "results_partial.jsonl"
+    ANSWERS_IN = _ANSWERS_JSON if _ANSWERS_JSON.exists() else _ANSWERS_JSONL
+    
+    OUT_JSON    = OUT_DIR / "results_reranked.json"
+    OUT_ZIP     = OUT_DIR / "submission_reranked.zip"
+    CKPT_JSON   = OUT_DIR / "results_reranked_checkpoint.json"
+    
+    DRIVE_CKPT  = DRIVE_DIR / "results_reranked_checkpoint.json"
+    DRIVE_ZIP   = DRIVE_DIR / "submission_reranked.zip"
+
+print(f"   📂 Database Cache: {CACHE_DB.name}")
+print(f"   📖 Dữ liệu đầu vào: {ANSWERS_IN.name}")
+print(f"   📦 File xuất bản: {OUT_ZIP.name}")
+print(f"   ☁️ Thư mục Drive: {DRIVE_DIR}\n")
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -103,7 +136,11 @@ def load_answers(path: Path) -> dict[int, dict]:
 
 
 def load_cache(path: Path) -> dict[int, list[dict]]:
-    print(f"📦 Loading retrieval cache...")
+    print(f"📦 Loading retrieval cache from {path.name}...")
+    if not path.exists():
+        print(f"\n❌ LỖI NGHIÊM TRỌNG: Không tìm thấy database cache tại: {path}")
+        print("   Vui lòng chắc chắn rằng bạn đã chạy Cell 6 (Retrieve) để tạo cache trước khi chạy Reranker!")
+        raise FileNotFoundError(f"Database cache not found at {path}")
     conn = sqlite3.connect(path)
     cache = {int(r[0]): json.loads(r[1])
              for r in conn.execute("SELECT question_id, chunks_json FROM retrieval_cache")}
@@ -244,6 +281,12 @@ def main():
 
     # Load dữ liệu
     answers  = load_answers(ANSWERS_IN)
+    if not answers:
+        print("\n❌ LỖI NGHIÊM TRỌNG: Không tìm thấy bất kỳ câu trả lời đầu vào nào để chạy Reranker!")
+        print(f"   Hành lang kiểm tra tại: {ANSWERS_IN}")
+        print("   👉 Giải pháp: Vui lòng chắc chắn rằng bạn đã có tệp câu trả lời từ lần chạy trước")
+        print("   (ví dụ: results_retune.json hoặc results_partial_test.jsonl) trong thư mục artifacts/output/ hoặc Google Drive.")
+        raise SystemExit(1)
     cache    = load_cache(CACHE_DB)
     reranker = None if args.no_reranker else load_reranker(device=args.device)
 
