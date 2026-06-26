@@ -1,6 +1,6 @@
 # VietPhapLy RAG - Road2AI Legal Assistant
 
-**Team: impact** | **Current Score:** `Macro F2 0.3976`
+**Team: impact** | **Current Score:** `Macro F2 0.4483`
 
 Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ thống pháp luật Việt Nam, được phát triển cho cuộc thi **Road2AI 2026**. Hệ thống được thiết kế tối ưu để tra cứu văn bản pháp luật, nghị định, thông tư một cách chính xác và chống ảo giác (hallucination) nghiêm ngặt.
 
@@ -10,9 +10,10 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 - **Hệ thống truy xuất (Retrieval):** Khởi điểm cực kỳ ổn định với **BM25** (bắt keyword, số hiệu luật chuẩn xác) kết hợp caching qua SQLite. Nền tảng được thiết kế sẵn sàng để mở rộng sang Hybrid Search (BM25 + BGE-M3 + Reranker).
 - **Tối ưu phần cứng:** Quản lý VRAM tự động (`gc.collect()`, `torch.cuda.empty_cache()`), cơ chế chia lô (batching) và retry thông minh giúp chạy mượt mà 2000 câu trên Google Colab (T4/L4) mà không bị Out-Of-Memory.
 - **Post-Processing 3 tầng:** Tự động lọc các điều luật ảo do LLM tự bịa, bổ sung citations (trích dẫn) bị thiếu một cách tự động để vượt qua khâu kiểm duyệt gắt gao (Validation) của hệ thống chấm điểm.
+
 ## Quy trình hoạt động (Baseline Pipeline)
 
-Phiên bản hiện tại (đạt mốc điểm 0.39) đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
+Phiên bản hiện tại (đạt mốc điểm 0.4483) đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
 
 ```text
 [Dữ liệu Luật Thô] 
@@ -37,7 +38,7 @@ Phiên bản hiện tại (đạt mốc điểm 0.39) đang hoạt động dựa
 
 1. **Ingest (Xử lý dữ liệu thô):** Tải các bộ luật, nghị định, thông tư và án lệ. Băm nhỏ văn bản (chunking) theo từng Điều/Khoản riêng biệt để LLM dễ đọc, loại bỏ các đoạn quá ngắn.
 2. **Index (Lập chỉ mục tìm kiếm):** Quét toàn bộ các đoạn luật vừa cắt và đưa vào từ điển tìm kiếm từ khóa (BM25 Sparse Index). Ở phiên bản này, hệ thống tập trung hoàn toàn vào việc bắt keyword và số hiệu luật chính xác tuyệt đối.
-3. **Retrieve (Truy xuất tài liệu):** Đọc 2000 câu hỏi, dùng BM25 để tìm ra các Điều luật liên quan nhất cho từng câu. Lưu toàn bộ kết quả tìm được vào một Database trung gian (SQLite Cache) để tách biệt hoàn toàn khâu tìm kiếm và khâu sinh text.
+3. **Retrieve (Truy xuất tài liệu):** Đọc 2000 câu hỏi, dùng thuật toán để tìm ra các Điều luật liên quan nhất cho từng câu. Lưu toàn bộ kết quả tìm được vào một Database trung gian (SQLite Cache) để tách biệt hoàn toàn khâu tìm kiếm và khâu sinh text.
 4. **Generate (Sinh câu trả lời - LLM):** Bật mô hình `Gemma-2-9B-it` lên GPU. Mô hình đọc câu hỏi và các Điều luật tương ứng lấy từ SQLite Cache. Nó đóng vai trò một chuyên gia pháp lý để phân tích, tổng hợp và viết ra câu trả lời cuối cùng. Quá trình này được chia lô nhỏ (batching) và dọn rác VRAM liên tục để chống tràn bộ nhớ (Out-of-Memory).
 5. **Post-Process & Submit (Hậu xử lý):** Quét lại câu trả lời của LLM. Tự động xóa bỏ các điều luật "ảo" (hallucinations) do AI tự bịa ra. Bổ sung các trích dẫn pháp lý (citations) bị thiếu vào cuối câu trả lời để đảm bảo vượt qua vòng kiểm duyệt (Validation) gắt gao của hệ thống chấm điểm, sau đó nén thành `submission.zip`.
 
@@ -61,7 +62,17 @@ Phiên bản hiện tại (đạt mốc điểm 0.39) đang hoạt động dựa
 
 Dự án được gom gọn vào duy nhất một entry point là `run.py`. Bạn có thể chạy toàn bộ hệ thống bằng 1 lệnh, hoặc chạy từng bước để dễ dàng theo dõi và debug.
 
-### 1. Chạy từng bước (Khuyên dùng trên Colab/Drive để tránh mất dữ liệu)
+### 1. Chạy toàn bộ luồng tự động (End-to-End Pipeline)
+
+```bash
+# Tự động chạy tuần tự từ Ingest -> Submit
+python run.py pipeline --device cuda
+
+# Bỏ qua Ingest/Index nếu đã tạo sẵn Database trên Google Drive
+python run.py pipeline --skip-ingest --skip-index --device cuda
+```
+
+### 2. Chạy từng bước (Khuyên dùng trên Colab/Drive để tránh mất dữ liệu)
 
 - **Bước 1 - Ingest:** Thu thập và cắt nhỏ văn bản luật (chunking) theo Điều/Khoản.
   ```bash
@@ -71,7 +82,7 @@ Dự án được gom gọn vào duy nhất một entry point là `run.py`. Bạ
   ```bash
   python run.py index --device cuda
   ```
-- **Bước 3 - Retrieve:** Tìm kiếm các đoạn luật liên quan cho từng câu hỏi và lưu vào Cache SQLite. Quá trình này giúp tách biệt việc tìm kiếm và sinh văn bản.
+- **Bước 3 - Retrieve:** Tìm kiếm các đoạn luật liên quan cho từng câu hỏi và lưu vào Cache SQLite.
   ```bash
   python run.py retrieve --device cuda
   ```
@@ -84,20 +95,10 @@ Dự án được gom gọn vào duy nhất một entry point là `run.py`. Bạ
   python run.py submit
   ```
 
-### 2. Chạy toàn bộ luồng tự động (End-to-End Pipeline)
-
+### 3. Tiện ích tinh chỉnh nhanh (Retune) để đạt 0.4483
+Nếu muốn đổi ngưỡng giới hạn số lượng điều luật (để ép F2 cao hơn) mà **không cần mất hàng chục tiếng để GPU chạy lại LLM**:
 ```bash
-# Tự động chạy tuần tự từ Ingest -> Submit
-python run.py pipeline --device cuda
-
-# Bỏ qua Ingest/Index nếu đã tạo sẵn Database trên Google Drive
-python run.py pipeline --skip-ingest --skip-index --device cuda
-```
-
-### 3. Tiện ích tinh chỉnh nhanh (Retune)
-Nếu muốn đổi ngưỡng giới hạn số lượng điều luật tối đa/tối thiểu được hiển thị mà **không cần mất hàng chục tiếng để GPU chạy lại LLM**:
-```bash
-python run.py retune --min-articles 3 --max-articles 8 --safe-threshold 0.3
+python run.py retune --min-articles 0 --max-articles 2 --safe-threshold 0.58
 ```
 
 ## Cấu trúc thư mục (Project Structure)
@@ -150,9 +151,3 @@ vietphaply-rag/
 ├── requirements-gpu.txt
 └── README.md
 ```
-
-## Lộ trình phát triển (Roadmap)
-- [x] Xây dựng kiến trúc end-to-end trên Google Colab.
-- [x] Thiết lập BM25 Baseline an toàn, không OOM.
-- [x] Hoàn thiện Post-processing tự động vá lỗi trích dẫn (Validation Passed).
-- [x] Cán mốc điểm số `0.39` vượt Baseline chính thức.
