@@ -45,7 +45,7 @@ def main():
     print(f"\n[3/3] Đang sinh câu trả lời (Generation) bằng LLM...")
     try:
         # Load LLM
-        generator = LegalGenerator(device=device)
+        generator = LegalGenerator.from_pretrained()
         postprocessor = PostProcessor(PostConfig())
 
         # Chọn chunks theo threshold
