@@ -280,8 +280,9 @@ def rerank_chunks(reranker, question: str, chunks: list[dict],
             logits = reranker.predict(pairs, batch_size=batch_size, show_progress_bar=False)
             scores = [_sigmoid(float(l)) for l in logits]
         except Exception as e:
-            print(f"   ⚠️ rerank error: {e}")
-            scores = [float(c.get("score", 0)) for c in unique]
+            print(f"   ❌ LỖI NGHIÊM TRỌNG TRONG LÚC RERANK (Có thể do tràn RAM GPU): {e}")
+            print("   ⚠️ Hãy giảm --batch-size xuống 8 hoặc 16.")
+            raise SystemExit(1)
     else:
         scores = [float(c.get("score", 0)) for c in unique]
 
