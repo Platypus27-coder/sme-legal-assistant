@@ -288,73 +288,66 @@ python run.py index           # store/bm25 + vectors
 python run.py retrieve        # search/ → populate SQLite cache
 python run.py generate        # answer/ → results_partial.jsonl
 python run.py submit          # validate + zip
-
-# Eval & tuning
-python run.py eval --pred output/results.json --ref data/dev_set.json
-python run.py retune --min-articles 3 --max-articles 8
-
-# Skip đã hoàn thành
-python run.py pipeline --skip-ingest --skip-index --device cuda
 ```
 
 ---
 
-
-## 5. Các Ý Tưởng Thiết Kế Cốt Lõi
+## 4. Các Ý Tưởng Thiết Kế Cốt Lõi
 
 Những tính năng dưới đây đã được thiết kế tối ưu và giữ vai trò quan trọng trong pipeline:
 
 | Tính năng | Lợi ích mang lại |
 |---|---|
-| Crash-safe streaming JSONL cho generation output | ✅ Giữ pattern `append + fsync` |
-| `formatted_doc` / `formatted_article` schema | ✅ Format bắt buộc của BTC |
+| Crash-safe streaming JSONL cho generation output | ✅ Giữ pattern `append + fsync` để chống mất dữ liệu khi đứt kết nối |
+| `formatted_doc` / `formatted_article` schema | ✅ Tuân thủ định dạng khắt khe của hệ thống nộp bài Kaggle |
 | Canonicalize document titles | ✅ Lấy title phổ biến nhất per doc_id |
-| RRF fusion k=60 | ✅ Công thức chuẩn |
+| RRF fusion k=60 | ✅ Công thức chuẩn kết hợp BM25 và Vector Search |
+| Sigmoid Reranking Transformation | ✅ Chuyển đổi logits thô của BGE-M3 thành dải xác suất [0,1] chuẩn mực |
 | 3-tier post-processing | ✅ Regex → Validation → Fallback |
-| Dynamic threshold (F2 optimization) | ✅ HIGH_CONF + SAFE + min_articles fallback |
-| Document-grouped context format | ✅ Tránh nhầm Điều giữa các văn bản |
-| Silver retrieval recall check | ✅ Evaluation script |
-| Retune thresholds mà không rerun LLM | ✅ Tiết kiệm thời gian iteration |
+| Dynamic threshold (F2 optimization) | ✅ Tham số hóa `HIGH_CONF`, `SAFE_CONF`, `min_articles` để dễ dàng tinh chỉnh |
+| Document-grouped context format | ✅ Tránh nhầm Điều giữa các văn bản khi đưa vào prompt |
+| Silver retrieval recall check | ✅ Tích hợp script đánh giá nội bộ |
+| Retune thresholds offline | ✅ Tái sử dụng SQLite Cache để tinh chỉnh ngưỡng mà không cần chạy lại LLM |
 
 ---
 
-## 6. Chiến Lược Tối Ưu F2
+## 5. Chiến Lược Tối Ưu F2
 
-```
+```text
 F2 = (1 + 4) × P × R / (4P + R) = 5PR / (4P + R)
 → Recall quan trọng gấp 4 lần Precision
 → Thà bắt thêm (precision thấp) hơn bỏ sót (recall thấp)
 ```
 
-**Retrieval**: BM25 (exact match) + vietlegal-e5 (semantic) → bổ sung lẫn nhau  
-**HyDE**: cải thiện dense recall trên câu hỏi paraphrase  
-**Threshold**: `SAFE=0.3` aggressive, `min_articles=3` fallback  
-**Iteration**: retune threshold từ SQLite cache mà không chạy lại LLM  
+**Retrieval**: BM25 (exact match keyword, số hiệu luật) + Dense Vector (semantic search) → bổ sung ưu khuyết điểm cho nhau.  
+**HyDE**: Sinh câu trả lời giả định (Hypothetical Document) để cải thiện dense recall cho các câu hỏi paraphrase đa dạng.  
+**Reranker**: Dùng `BGE-M3 Cross-Encoder` để chấm điểm lại chính xác độ liên quan giữa Câu hỏi và Điều luật.  
+**Threshold**: Hệ thống áp dụng 2 ngưỡng linh hoạt: 
+- `HIGH_CONF` để đưa thẳng vào danh sách `relevant_articles`.
+- `SAFE` (thấp hơn) để đưa thêm vào ngữ cảnh cho LLM tự phân tích.  
 
 ---
 
-## 7. Rủi Ro & Mitigation
+## 6. Rủi Ro & Giải Pháp Tương Ứng
 
 | Rủi ro | Mitigation |
 |---|---|
-| `vietlegal-e5` không available hoặc kém | Fallback chain: `vn-legal-embedding-v1` → `bge-m3` |
-| HyDE tốn thêm LLM inference lúc retrieve | Dùng model nhỏ (Gemma-2-2B) chỉ cho HyDE expansion |
-| Gemma-2-9B OOM trên T4 | Fallback Gemma-2-2B-it; batch size tự động giảm khi OOM |
-| Colab crash giữa generation | JSONL streaming + SQLite cache resume |
-| Format submission sai | Strict validator trước khi zip |
-| Hết 5 lượt Private Phase | Gate bằng local F2 eval trước mỗi lần nộp |
+| Colab crash giữa quá trình LLM Generation (9 tiếng) | Đã thiết kế JSONL streaming + SQLite cache để có thể Resume ngay vị trí đứt gãy. |
+| OOM (Out Of Memory) khi chạy BGE-Reranker | Bắt lỗi trực tiếp bằng `raise SystemExit(1)` thay vì âm thầm dùng lại điểm cũ, kết hợp giảm `batch_size` xuống mức an toàn. |
+| LLM tự bịa số hiệu luật (Hallucination) | Tầng Post-Processing dùng Regex quét lại toàn bộ, nếu số hiệu không nằm trong tập Retrieved sẽ bị xóa ngay. |
+| HyDE tốn thêm VRAM lúc retrieve | Có thể tắt hoặc dùng mô hình nhỏ gọn chuyên biệt chỉ cho HyDE expansion. |
 
 ---
 
-## 8. Timeline
+## 7. Timeline Lộ Trình
 
-```
-Tuần 1: ingest + index (corpus/ + store/)
-Tuần 2: retrieval pipeline + cache (search/ + cache.py)
-Tuần 3: generation + post-processing + first submission
-Tuần 4: iterate threshold/prompt, final submission
+```text
+Giai đoạn 1: Ingest + Index (Xử lý dữ liệu và tạo từ điển BM25, ChromaDB)
+Giai đoạn 2: Retrieval Pipeline + Cache (Thiết lập thuật toán Hybrid, Reranker và bộ nhớ đệm SQLite)
+Giai đoạn 3: Generation + Post-processing (Tích hợp LLM sinh văn bản và hậu xử lý)
+Giai đoạn 4: Iterate threshold/prompt, Final submission (Tối ưu hóa siêu tham số offline để tìm ra cấu hình đạt F2 cao nhất)
 ```
 
 ---
 
-*Package: `vpl` | Model: Gemma-2-9B-it | Embedding: vietlegal-e5 | VectorDB: ChromaDB*
+*Package: `vpl` | Model: Gemma-2-9B-it | Reranker: BGE-reranker-v2-m3 | VectorDB: ChromaDB*
