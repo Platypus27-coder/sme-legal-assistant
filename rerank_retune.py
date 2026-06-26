@@ -20,8 +20,13 @@ import re
 import shutil
 import sqlite3
 import zipfile
+import sys
 from pathlib import Path
 from typing import Any, Iterable
+
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 # ─── Mặc định tốt nhất (0.3976) ─────────────────────────────────────────────
 DEFAULT_HIGH_CONF   = 0.62
@@ -246,8 +251,9 @@ def load_reranker(model_name: str = "BAAI/bge-reranker-v2-m3", device: str = "cu
         print("   ✅ Reranker ready!")
         return reranker
     except Exception as e:
-        print(f"   ⚠️ Không tải được ({e}) → dùng hybrid score thuần")
-        return None
+        print(f"   ❌ LỖI NGHIÊM TRỌNG: KHÔNG THỂ TẢI BGE-RERANKER! Lỗi chi tiết: {e}")
+        print("   ⚠️ Hệ thống sẽ DỪNG LẠI thay vì chạy tiếp bằng thuật toán cũ (nếu chạy tiếp điểm sẽ vẫn là 0.4483).")
+        raise SystemExit(1)
 
 
 def rerank_chunks(reranker, question: str, chunks: list[dict],

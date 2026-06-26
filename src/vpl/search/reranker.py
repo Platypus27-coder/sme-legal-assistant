@@ -13,5 +13,6 @@ def load_reranker(device: str = "cpu"):
         print(f"✅ Reranker loaded: {SEARCH.reranker_model}")
         return reranker
     except Exception as exc:
-        print(f"⚠ Reranker unavailable ({exc}), using RRF scores only")
-        return None
+        print(f"❌ LỖI NGHIÊM TRỌNG: KHÔNG THỂ TẢI RERANKER! Lỗi: {exc}")
+        print("⚠️ Hệ thống sẽ DỪNG LẠI thay vì chạy tiếp bằng thuật toán cũ.")
+        raise SystemExit(1)
