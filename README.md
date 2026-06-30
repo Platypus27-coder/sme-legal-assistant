@@ -9,6 +9,22 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 - **Tối ưu phần cứng:** Quản lý VRAM tự động (`gc.collect()`, `torch.cuda.empty_cache()`), cơ chế chia lô (batching) và retry thông minh giúp chạy mượt mà 2000 câu trên Google Colab (T4/L4) mà không bị Out-Of-Memory.
 - **Post-Processing 3 tầng:** Tự động lọc các điều luật ảo do LLM tự bịa, bổ sung citations (trích dẫn) bị thiếu một cách tự động để vượt qua khâu kiểm duyệt gắt gao (Validation) của hệ thống chấm điểm.
 
+
+## Link tải Dữ liệu và Mô hình (Dành cho Ban Giám khảo)
+
+Để hệ thống hoạt động, Ban Giám khảo vui lòng tải dữ liệu và mô hình theo hướng dẫn sau:
+
+1. **Dữ liệu hệ thống (Data):**
+   - **Đường dẫn tải dữ liệu:** [ĐIỀN LINK GOOGLE DRIVE CỦA BẠN VÀO ĐÂY]
+   - **Cách sử dụng:** Tải file .zip từ đường link trên, giải nén và đặt toàn bộ các file (R2AIStage1DATA.json, phapdien.jsonl, nle.jsonl) vào thư mục data/ ở thư mục gốc của mã nguồn.
+
+2. **Trọng số Mô hình (Checkpoints):**
+   - Giải pháp của chúng tôi sử dụng mô hình mã nguồn mở nguyên bản kết hợp RAG thay vì Fine-tuning, do đó **không có Checkpoint cục bộ nào cần phải tải thủ công**.
+   - Mã nguồn sẽ tự động kết nối và tải các trọng số này thông qua HuggingFace khi chạy lệnh:
+     - LLM: [unsloth/gemma-2-9b-it-bnb-4bit](https://huggingface.co/unsloth/gemma-2-9b-it-bnb-4bit)
+     - Reranker: [BAAI/bge-reranker-v2-m3](https://huggingface.co/BAAI/bge-reranker-v2-m3)
+     - Embeddings: [mainguyen9/vietlegal-e5](https://huggingface.co/mainguyen9/vietlegal-e5)
+
 ## Quy trình hoạt động (Baseline Pipeline)
 
 Phiên bản hiện tại đang hoạt động dựa trên luồng quy trình 5 bước độc lập, được thiết kế để chống đứt gãy (crash-safe) trên môi trường Google Colab:
