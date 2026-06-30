@@ -15,7 +15,7 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 Để hệ thống hoạt động, Ban Giám khảo vui lòng tải dữ liệu và mô hình theo hướng dẫn sau:
 
 1. **Dữ liệu hệ thống (Data):**
-   - **Đường dẫn tải dữ liệu:** [ĐIỀN LINK GOOGLE DRIVE CỦA BẠN VÀO ĐÂY]
+   - **Đường dẫn tải dữ liệu:** https://drive.google.com/drive/u/0/folders/1Gq2JFetYk7VXH5EtSMQMu1V4kFesVorr
    - **Cách sử dụng:** Tải file .zip từ đường link trên, giải nén và đặt file R2AIStage1DATA.json vào thư mục data/ ở thư mục gốc của mã nguồn. Các dữ liệu Pháp điển và Án lệ sẽ được hệ thống tự động tải trực tiếp từ HuggingFace nên không cần phải tải thủ công.
 
 2. **Trọng số Mô hình (Checkpoints):**

@@ -25,7 +25,7 @@ Tài liệu này được biên soạn nhằm đáp ứng đầy đủ các tiê
   - `formatted_article`: Định dạng ép buộc `[mã VB]|[Loại VB] [Mã VB] [Trích yếu]|[Điều X]`.
 
 ### 1.3. Đường dẫn chia sẻ và Hướng dẫn sử dụng
-- **🔗 Đường dẫn tải dữ liệu (Google Drive):** `[ĐIỀN LINK GOOGLE DRIVE CỦA BẠN VÀO ĐÂY]`
+- **🔗 Đường dẫn tải dữ liệu (Google Drive):** `https://drive.google.com/drive/u/0/folders/1Gq2JFetYk7VXH5EtSMQMu1V4kFesVorr`
 - **Hướng dẫn tải và sử dụng:** Ban Giám khảo truy cập đường link trên để tải file nén `.zip` chứa dữ liệu. Sau khi tải về, vui lòng giải nén và copy toàn bộ các file `.json`/`.jsonl` vào thư mục `data/` của dự án. Hệ thống sẽ tự động đọc dữ liệu từ thư mục này.
 
 ---
