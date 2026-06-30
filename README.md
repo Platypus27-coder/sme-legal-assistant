@@ -16,7 +16,7 @@ Giải pháp Legal RAG (Retrieval-Augmented Generation) dành riêng cho hệ th
 
 1. **Dữ liệu hệ thống (Data):**
    - **Đường dẫn tải dữ liệu:** [ĐIỀN LINK GOOGLE DRIVE CỦA BẠN VÀO ĐÂY]
-   - **Cách sử dụng:** Tải file .zip từ đường link trên, giải nén và đặt toàn bộ các file (R2AIStage1DATA.json, phapdien.jsonl, nle.jsonl) vào thư mục data/ ở thư mục gốc của mã nguồn.
+   - **Cách sử dụng:** Tải file .zip từ đường link trên, giải nén và đặt file R2AIStage1DATA.json vào thư mục data/ ở thư mục gốc của mã nguồn. Các dữ liệu Pháp điển và Án lệ sẽ được hệ thống tự động tải trực tiếp từ HuggingFace nên không cần phải tải thủ công.
 
 2. **Trọng số Mô hình (Checkpoints):**
    - Giải pháp của chúng tôi sử dụng mô hình mã nguồn mở nguyên bản kết hợp RAG thay vì Fine-tuning, do đó **không có Checkpoint cục bộ nào cần phải tải thủ công**.
